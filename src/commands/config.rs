@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Arg, ArgMatches, Command};
-use dialoguer::{Confirm, Input, Select};
+use inquire::{Confirm, Select, Text};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -247,59 +247,53 @@ fn interactive_config_setup(config: &mut Config) -> Result<()> {
             t!("command.config.set.exit").to_string(),
         ];
 
-        let selection = Select::new()
-            .with_prompt(t!("general.choose_option").as_ref())
-            .items(&items)
-            .default(0)
-            .interact()?;
+        let selection = Select::new(t!("general.choose_option").as_ref(), items)
+            .with_starting_cursor(0)
+            .prompt()?;
 
-        match selection {
-            0 => {
-                let new_value = prompt_for_field("draft_path", &config.draft_path)?;
-                if new_value != config.draft_path {
-                    config.draft_path = new_value.clone();
-                    println!(
-                        "{}",
-                        t!(
-                            "command.config.set.updated",
-                            field = "draft_path",
-                            old = &config.draft_path,
-                            new = &new_value
-                        )
-                    );
-                }
+        // 根据选中的字符串匹配操作
+        if selection.starts_with(&t!("fields.draft_path").to_string()) {
+            let new_value = prompt_for_field("draft_path", &config.draft_path)?;
+            if new_value != config.draft_path {
+                config.draft_path = new_value.clone();
+                println!(
+                    "{}",
+                    t!(
+                        "command.config.set.updated",
+                        field = "draft_path",
+                        old = &config.draft_path,
+                        new = &new_value
+                    )
+                );
             }
-            1 => {
-                let new_value = prompt_for_language(&config.lang)?;
-                if new_value != config.lang {
-                    config.set_field("lang", &new_value)?;
-                    println!(
-                        "{}",
-                        t!(
-                            "command.config.set.updated",
-                            field = "lang",
-                            old = &config.lang,
-                            new = &new_value
-                        )
-                    );
-                }
+        } else if selection.starts_with(&t!("fields.lang").to_string()) {
+            let new_value = prompt_for_language(&config.lang)?;
+            if new_value != config.lang {
+                config.set_field("lang", &new_value)?;
+                println!(
+                    "{}",
+                    t!(
+                        "command.config.set.updated",
+                        field = "lang",
+                        old = &config.lang,
+                        new = &new_value
+                    )
+                );
             }
-            2 => {
-                show()?;
-                continue;
-            }
-            3 => break,
-            _ => continue,
+        } else if selection == t!("command.config.set.show_current") {
+            show()?;
+            continue;
+        } else if selection == t!("command.config.set.exit") {
+            break;
         }
 
         // 保存配置
         config.save()?;
 
         // 询问是否继续
-        if !Confirm::new()
-            .with_prompt(t!("command.config.set.continue_prompt").as_ref())
-            .default(true)
-            .interact()?
+        if !Confirm::new(t!("command.config.set.continue_prompt").as_ref())
+            .with_default(true)
+            .prompt()?
         {
             break;
         }
@@ -322,10 +316,9 @@ fn prompt_for_field(field: &str, current_value: &str) -> Result<String> {
             field = field_name,
             current = current_value
         );
-        let input: String = Input::new()
-            .with_prompt(prompt.as_ref())
-            .default(current_value.to_string())
-            .interact_text()?;
+        let input: String = Text::new(prompt.as_ref())
+            .with_default(current_value)
+            .prompt()?;
 
         Ok(input)
     }
@@ -343,11 +336,19 @@ fn prompt_for_language(current_lang: &str) -> Result<String> {
         .position(|&lang| lang == current_lang)
         .unwrap_or(0);
 
-    let selection = Select::new()
-        .with_prompt(t!("fields.lang").as_ref())
-        .items(&language_items)
-        .default(current_index)
-        .interact()?;
+    let selection = Select::new(t!("fields.lang").as_ref(), language_items)
+        .with_starting_cursor(current_index)
+        .prompt()?;
 
-    Ok(languages[selection].to_string())
+    // 从选中的显示文本中提取语言代码 (格式: "Display Name (code)")
+    if let Some(start) = selection.rfind('(') {
+        if let Some(end) = selection.rfind(')') {
+            if start < end {
+                return Ok(selection[start + 1..end].to_string());
+            }
+        }
+    }
+
+    // 如果解析失败，返回默认语言
+    Ok("zh-Hans".to_string())
 }
