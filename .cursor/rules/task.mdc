@@ -50,6 +50,11 @@ Approach task implementation methodically with careful planning and execution.
 - Handle edge cases
 - Consider future maintenance
 
+### 6. Don't execute it directly
+1. Talk about the plan
+2. Waiting for response
+3. implement it after agreeing
+
 ## Checklist:
 - [ ] Requirements fully understood
 - [ ] Approach documented
