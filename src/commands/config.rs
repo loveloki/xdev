@@ -1,8 +1,56 @@
 use anyhow::{Context, Result};
+use clap::{Command, Arg, ArgMatches};
 use dialoguer::{Select, Input, Confirm};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+
+pub fn register_command(app: &mut Command) {
+    *app = app
+        .clone()
+        .subcommand(
+            Command::new("config")
+                .about("Manage configuration")
+                .subcommand(
+                    Command::new("show")
+                        .about("Show current configuration")
+                )
+                .subcommand(
+                    Command::new("set")
+                        .about("Set configuration values")
+                        .arg(
+                            Arg::new("field")
+                                .help("Configuration field to set")
+                                .required(false)
+                                .index(1)
+                        )
+                        .arg(
+                            Arg::new("value")
+                                .help("Value to set")
+                                .required(false)
+                                .index(2)
+                        )
+                )
+        );
+}
+
+pub fn handle_command(matches: &ArgMatches) -> Result<()> {
+    if let Some(config_matches) = matches.subcommand_matches("config") {
+        match config_matches.subcommand() {
+            Some(("show", _)) => show(),
+            Some(("set", set_matches)) => {
+                let field = set_matches.get_one::<String>("field").map(|s| s.as_str());
+                let value = set_matches.get_one::<String>("value").map(|s| s.as_str());
+                set_item(field, value)
+            }
+            _ => {
+                show() // 默认显示配置
+            }
+        }
+    } else {
+        Ok(())
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

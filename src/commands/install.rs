@@ -1,8 +1,32 @@
 use anyhow::{Context, Result};
+use clap::{Command, ArgMatches};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
+
+pub fn register_command(app: &mut Command) {
+    *app = app
+        .clone()
+        .subcommand(
+            Command::new("install")
+                .about("Install xdev binary to system")
+        )
+        .subcommand(
+            Command::new("uninstall")
+                .about("Uninstall xdev binary from system")
+        );
+}
+
+pub fn handle_command(matches: &ArgMatches) -> Result<()> {
+    if matches.subcommand_matches("install").is_some() {
+        execute()
+    } else if matches.subcommand_matches("uninstall").is_some() {
+        uninstall()
+    } else {
+        Ok(())
+    }
+}
 
 pub fn execute() -> Result<()> {
     println!("🔨 Building release binary...");
