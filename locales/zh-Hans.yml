@@ -1,0 +1,72 @@
+command:
+  version:
+    description: "显示版本信息"
+    output: "xdev %{version}"
+  
+  install:
+    description: "安装 xdev 二进制文件到系统"
+    building: "🔨 正在构建 release 版本..."
+    installing: "📦 正在安装 xdev 到 %{path}..."
+    success: "✅ 成功安装 xdev 到 %{path}"
+    path_warning: "⚠️  警告：%{path} 不在您的 PATH 中"
+    path_instruction: "   请将以下行添加到您的 shell 配置文件 (~/.bashrc, ~/.zshrc 等)："
+    path_export: "   export PATH=\"%{path}:$PATH\""
+  
+  uninstall:
+    description: "从系统中卸载 xdev 二进制文件"
+    not_installed: "ℹ️  xdev 未安装在 %{path}"
+    removing: "🗑️  正在从 %{path} 移除 xdev..."
+    success: "✅ 成功卸载 xdev"
+  
+  config:
+    description: "管理配置"
+    show:
+      description: "显示当前配置"
+      title: "📋 配置 (%{path})"
+      table_header_setting: "设置"
+      table_header_value: "值"
+    set:
+      description: "设置配置值"
+      success: "✅ 设置 %{field} = %{value}"
+      updated: "✅ 已将 %{field} 从 '%{old}' 更新为 '%{new}'"
+      no_changes: "ℹ️  %{field} 没有变更"
+      interactive_title: "🔧 交互式配置设置"
+      interactive_prompt: "选择一个配置项进行修改："
+      show_current: "显示当前配置"
+      exit: "退出"
+      continue_prompt: "继续配置？"
+      completed: "🎉 配置完成！"
+
+  lang:
+    description: "语言设置"
+    current_prompt: "%{field} (当前: %{current})"
+
+error:
+  cargo_build_failed: "执行 cargo build 失败"
+  build_failed: "构建二进制文件失败：\n%{error}"
+  copy_failed: "复制二进制文件失败，从 %{from} 到 %{to}"
+  remove_failed: "移除二进制文件失败，从 %{path}"
+  config_dir_failed: "创建配置目录失败：%{path}"
+  config_read_failed: "读取配置文件失败：%{path}"
+  config_parse_failed: "解析配置文件失败"
+  config_write_failed: "写入配置文件失败：%{path}"
+  config_serialize_failed: "序列化配置失败"
+  unknown_field: "未知配置字段：%{field}"
+  unsupported_language: "不支持的语言：%{lang}"
+  current_exe_failed: "获取当前可执行文件路径失败"
+  current_dir_failed: "获取当前目录失败"
+  config_dir_not_found: "找不到配置目录"
+
+general:
+  default_message: "xdev CLI 工具 - 使用 --help 获取更多信息"
+  app_description: "开发 CLI 工具"
+  choose_option: "选择一个选项"
+  draft_path_description: "draft 路径"
+
+help:
+  config_field: "要设置的配置字段"
+  config_value: "要设置的值"
+
+fields:
+  draft_path: "草稿路径"
+  lang: "语言" 

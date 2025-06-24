@@ -1,13 +1,11 @@
+use crate::core::i18n::t;
 use anyhow::Result;
-use clap::{Command, ArgMatches};
+use clap::{ArgMatches, Command};
 
 pub fn register_command(app: &mut Command) {
     *app = app
         .clone()
-        .subcommand(
-            Command::new("version")
-                .about("Show version information")
-        );
+        .subcommand(Command::new("version").about(t!("command.version.description").to_string()));
 }
 
 pub fn handle_command(matches: &ArgMatches) -> Result<()> {
@@ -19,6 +17,12 @@ pub fn handle_command(matches: &ArgMatches) -> Result<()> {
 }
 
 pub fn execute() -> Result<()> {
-    println!("xdev {}", env!("CARGO_PKG_VERSION"));
+    println!(
+        "{}",
+        t!(
+            "command.version.output",
+            version = env!("CARGO_PKG_VERSION")
+        )
+    );
     Ok(())
-} 
+}
