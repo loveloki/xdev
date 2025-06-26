@@ -1,0 +1,153 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 触发条件：推送以 'v' 开头的标签
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 安装 Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: 安装 cross
+      run: cargo install cross --git https://github.com/cross-rs/cross
+
+    - name: 安装 UPX
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y upx-ucl
+
+    - name: 构建二进制文件
+      run: |
+        echo "开始构建 ${{ matrix.target }}..."
+        cross build --target ${{ matrix.target }} --release
+        echo "构建完成，检查文件："
+        ls -la target/${{ matrix.target }}/release/
+        if [ ! -f "target/${{ matrix.target }}/release/xdev" ]; then
+          echo "错误：未找到构建的二进制文件！"
+          exit 1
+        fi
+
+    - name: 压缩二进制文件
+      run: |
+        mkdir -p dist
+        cp target/${{ matrix.target }}/release/xdev dist/xdev-${{ matrix.target }}
+        echo "压缩前大小："
+        ls -lh dist/xdev-${{ matrix.target }}
+        upx --best dist/xdev-${{ matrix.target }}
+        echo "压缩后大小："
+        ls -lh dist/xdev-${{ matrix.target }}
+
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: xdev-${{ matrix.target }}
+        path: dist/xdev-${{ matrix.target }}
+        if-no-files-found: error
+
+  release:
+    name: 创建发布
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 下载所有构建产物
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: 重组文件结构
+      run: |
+        mkdir -p release
+        # actions/download-artifact@v4 为每个 artifact 创建单独目录
+        echo "Artifacts 目录结构:"
+        find artifacts -type f -ls
+        
+        # 复制所有二进制文件到 release 目录
+        cp artifacts/*/xdev-* release/ 2>/dev/null || true
+        
+        # 备用方法：使用 find 命令
+        find artifacts -name "xdev-*" -type f -exec cp {} release/ \; 2>/dev/null || true
+        
+        echo "Release 目录内容:"
+        ls -la release/
+        
+        # 验证文件数量
+        file_count=$(ls -1 release/ | wc -l)
+        echo "找到 $file_count 个二进制文件"
+        
+        if [ "$file_count" -eq 0 ]; then
+          echo "错误：没有找到任何二进制文件！"
+          echo "完整的 artifacts 目录结构："
+          find artifacts -type f -name "*"
+          exit 1
+        fi
+
+    - name: 生成变更日志
+      id: changelog
+      run: |
+        if [ -f CHANGELOG.md ]; then
+          # 提取当前版本的变更内容
+          CURRENT_VERSION=${GITHUB_REF#refs/tags/}
+          sed -n "/## $CURRENT_VERSION/,/## /p" CHANGELOG.md | sed '$d' > current_changelog.md
+          if [ -s current_changelog.md ]; then
+            echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+            cat current_changelog.md >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "CHANGELOG=此版本的详细变更内容请查看提交历史。" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "CHANGELOG=此版本的详细变更内容请查看提交历史。" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 创建 GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/*
+        body: |
+          ## 🚀 xdev ${{ github.ref_name }}
+          
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### 📦 支持的架构
+          - `xdev-x86_64-unknown-linux-gnu`: Linux x86_64
+          - `xdev-aarch64-unknown-linux-gnu`: Linux ARM64
+          
+          ### 📥 安装方法
+          ```bash
+          # 下载对应架构的二进制文件
+          # 为文件添加执行权限
+          chmod +x xdev-*
+          # 移动到 PATH 目录
+          sudo mv xdev-* /usr/local/bin/xdev
+          ```
+          
+          ---
+          通过 GitHub Actions 自动构建 🤖
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
