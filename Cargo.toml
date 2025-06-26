@@ -16,3 +16,10 @@ rust-i18n = "3"
 [package.metadata.i18n]
 fallback-language = "zh-Hans"
 load-path = "locales"
+
+[profile.release]
+lto = true          # 开启链接时优化
+opt-level = "z"     # 为最小体积优化
+strip = true        # 自动剥离符号信息
+panic = "abort"     # panic 时直接终止程序
+codegen-units = 1   # 减少codegen单元以获得更好的优化
