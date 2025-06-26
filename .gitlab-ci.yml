@@ -1,0 +1,109 @@
+stages:
+  - build
+  - release
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+  CARGO_TARGET_DIR: $CI_PROJECT_DIR/target
+
+# 缓存配置
+cache:
+  key: "$CI_JOB_NAME"
+  paths:
+    - cargo/
+    - target/
+
+# 构建阶段
+.build_template: &build_template
+  stage: build
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y upx-ucl
+    - cargo install cross --git https://github.com/cross-rs/cross
+  script:
+    - cross build --target $TARGET --release
+    - mkdir -p dist
+    - cp target/$TARGET/release/xdev dist/xdev-$TARGET
+    - upx --best dist/xdev-$TARGET
+  artifacts:
+    paths:
+      - dist/xdev-$TARGET
+    expire_in: 1 hour
+  only:
+    - tags
+
+build:linux-x86_64:
+  <<: *build_template
+  variables:
+    TARGET: x86_64-unknown-linux-gnu
+
+build:linux-aarch64:
+  <<: *build_template
+  variables:
+    TARGET: aarch64-unknown-linux-gnu
+
+# 发布阶段
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  dependencies:
+    - build:linux-x86_64
+    - build:linux-aarch64
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo "准备发布 $CI_COMMIT_TAG"
+    - ls -la dist/
+    
+    # 生成发布描述
+    - |
+      cat > release_description.md << EOF
+      ## 🚀 xdev $CI_COMMIT_TAG
+      
+      通过 GitLab CI/CD 自动构建的发布版本。
+      
+      ### 📦 支持的架构
+      - \`xdev-x86_64-unknown-linux-gnu\`: Linux x86_64
+      - \`xdev-aarch64-unknown-linux-gnu\`: Linux ARM64
+      
+      ### 📥 安装方法
+      \`\`\`bash
+      # 下载对应架构的二进制文件
+      # 为文件添加执行权限
+      chmod +x xdev-*
+      # 移动到 PATH 目录
+      sudo mv xdev-* /usr/local/bin/xdev
+      \`\`\`
+      
+      ### 🔗 下载链接
+      
+      EOF
+    
+    # 上传文件到 GitLab Generic Package Registry
+    - |
+      for file in dist/xdev-*; do
+        filename=$(basename $file)
+        echo "上传 $filename..."
+        curl --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+             --upload-file $file \
+             "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/xdev/${CI_COMMIT_TAG}/$filename"
+        
+        # 添加下载链接到发布描述
+        echo "- [$filename](${CI_PROJECT_URL}/-/packages/generic/xdev/${CI_COMMIT_TAG}/$filename)" >> release_description.md
+      done
+    
+    # 创建 GitLab Release
+    - |
+      release-cli create \
+        --name "xdev $CI_COMMIT_TAG" \
+        --description "$(cat release_description.md)" \
+        --tag-name $CI_COMMIT_TAG \
+        --assets-link "{\"name\":\"xdev-x86_64-unknown-linux-gnu\",\"url\":\"${CI_PROJECT_URL}/-/packages/generic/xdev/${CI_COMMIT_TAG}/xdev-x86_64-unknown-linux-gnu\"}" \
+        --assets-link "{\"name\":\"xdev-aarch64-unknown-linux-gnu\",\"url\":\"${CI_PROJECT_URL}/-/packages/generic/xdev/${CI_COMMIT_TAG}/xdev-aarch64-unknown-linux-gnu\"}"
+
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  only:
+    - tags 
