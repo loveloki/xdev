@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*' # 触发条件：推送以 'v' 开头的标签
 
+# 明确声明工作流权限
+permissions:
+  contents: write  # 需要写入权限来创建 release
+  packages: write  # 可能需要包权限
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -69,6 +74,8 @@ jobs:
     name: 创建发布
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 明确声明 release job 需要写入权限
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -126,6 +133,7 @@ jobs:
     - name: 创建 GitHub Release
       uses: softprops/action-gh-release@v1
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         files: release/*
         body: |
           ## 🚀 xdev ${{ github.ref_name }}
@@ -149,5 +157,5 @@ jobs:
           通过 GitHub Actions 自动构建 🤖
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        fail_on_unmatched_files: false
+        generate_release_notes: false 
