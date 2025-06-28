@@ -1,6 +1,6 @@
 use crate::core::i18n::t;
 use anyhow::{Context, Result};
-use clap::{ArgMatches, Command};
+use clap::Command;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -9,20 +9,7 @@ use std::process;
 pub fn register_command(app: &mut Command) {
     *app = app
         .clone()
-        .subcommand(Command::new("install").about(t!("command.install.description").to_string()))
-        .subcommand(
-            Command::new("uninstall").about(t!("command.uninstall.description").to_string()),
-        );
-}
-
-pub fn handle_command(matches: &ArgMatches) -> Result<()> {
-    if matches.subcommand_matches("install").is_some() {
-        execute()
-    } else if matches.subcommand_matches("uninstall").is_some() {
-        uninstall()
-    } else {
-        Ok(())
-    }
+        .subcommand(Command::new("install").about(t!("command.install.description").to_string()));
 }
 
 pub fn execute() -> Result<()> {
@@ -98,45 +85,23 @@ pub fn execute() -> Result<()> {
     Ok(())
 }
 
-pub fn uninstall() -> Result<()> {
-    let install_dir = get_install_dir()?;
-    let target_path = install_dir.join("xdev");
 
-    if !target_path.exists() {
-        println!(
-            "{}",
-            t!(
-                "command.uninstall.not_installed",
-                path = target_path.display()
-            )
-        );
-        return Ok(());
-    }
-
-    println!(
-        "{}",
-        t!("command.uninstall.removing", path = target_path.display())
-    );
-
-    fs::remove_file(&target_path)
-        .with_context(|| t!("error.remove_failed", path = target_path.display()).to_string())?;
-
-    println!("{}", t!("command.uninstall.success"));
-
-    Ok(())
-}
 
 fn get_install_dir() -> Result<PathBuf> {
-    // 优先使用 ~/.local/bin，如果不存在则使用 /usr/local/bin
-    if let Some(home_dir) = dirs::home_dir() {
-        let local_bin = home_dir.join(".local").join("bin");
-        if local_bin.exists() || fs::create_dir_all(&local_bin).is_ok() {
-            return Ok(local_bin);
-        }
+    // 只使用 ~/.local/bin
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!(t!("error.home_dir_not_found").to_string()))?;
+    
+    let local_bin = home_dir.join(".local").join("bin");
+    
+    // 如果目录不存在，尝试创建
+    if !local_bin.exists() {
+        fs::create_dir_all(&local_bin).with_context(|| {
+            t!("error.create_install_dir_failed", path = local_bin.display()).to_string()
+        })?;
     }
-
-    // 如果 ~/.local/bin 不可用，使用 /usr/local/bin (需要sudo权限)
-    Ok(PathBuf::from("/usr/local/bin"))
+    
+    Ok(local_bin)
 }
 
 fn get_binary_path() -> Result<PathBuf> {

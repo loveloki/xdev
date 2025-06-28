@@ -61,12 +61,13 @@ error:
   current_exe_failed: "Failed to get current executable path"
   current_dir_failed: "Failed to get current directory"
   config_dir_not_found: "Could not find config directory"
+  home_dir_not_found: "Could not find user home directory"
+  create_install_dir_failed: "Failed to create install directory: %{path}"
   zdocs_not_found: "zdocs directory does not exist: %{path}"
   no_subdirs_found: "No subdirectories found in %{path}"
   draft_not_found: "No draft directory with all required files found in %{path}"
 
 general:
-  default_message: "xdev CLI tool - use --help for more information"
   app_description: "A development CLI tool"
   choose_option: "Choose an option"
   draft_path_description: "Path for draft documents"

@@ -61,12 +61,13 @@ error:
   current_exe_failed: "获取当前可执行文件路径失败"
   current_dir_failed: "获取当前目录失败"
   config_dir_not_found: "找不到配置目录"
+  home_dir_not_found: "无法找到用户主目录"
+  create_install_dir_failed: "创建安装目录失败：%{path}"
   zdocs_not_found: "zdocs 目录不存在：%{path}"
   no_subdirs_found: "在 %{path} 中未找到子目录"
   draft_not_found: "在 %{path} 中未找到包含所有必需文件的 draft 目录"
 
 general:
-  default_message: "xdev CLI 工具 - 使用 --help 获取更多信息"
   app_description: "开发 CLI 工具"
   choose_option: "选择一个选项"
   draft_path_description: "draft 路径"

@@ -14,8 +14,22 @@ fn main() -> Result<()> {
     // 提前加载配置以设置正确的语言
     let _ = commands::config::Config::load();
 
-    let app = commands::register_command();
-    let matches = app.get_matches();
+    let mut app = commands::register_command();
+    let matches = match app.clone().try_get_matches() {
+        Ok(matches) => matches,
+        Err(err) => {
+            // 如果是未知子命令错误，显示帮助信息
+            if err.kind() == clap::error::ErrorKind::UnknownArgument 
+                || err.kind() == clap::error::ErrorKind::InvalidSubcommand {
+                app.print_help()?;
+                println!();
+                return Ok(());
+            } else {
+                // 其他错误直接退出
+                err.exit();
+            }
+        }
+    };
 
-    commands::handle_command(&matches)
+    commands::handle_command(&mut app, &matches)
 }

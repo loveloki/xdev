@@ -1,6 +1,6 @@
 use crate::core::i18n::t;
 use anyhow::Result;
-use clap::{ArgMatches, Command};
+use clap::Command;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -18,14 +18,6 @@ pub fn register_command(app: &mut Command) {
     *app = app
         .clone()
         .subcommand(Command::new("draft").about(t!("command.draft.description").to_string()));
-}
-
-pub fn handle_command(matches: &ArgMatches) -> Result<()> {
-    if matches.subcommand_matches("draft").is_some() {
-        execute()
-    } else {
-        Ok(())
-    }
 }
 
 pub fn execute() -> Result<()> {

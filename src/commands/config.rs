@@ -36,21 +36,17 @@ pub fn register_command(app: &mut Command) {
     );
 }
 
-pub fn handle_command(matches: &ArgMatches) -> Result<()> {
-    if let Some(config_matches) = matches.subcommand_matches("config") {
-        match config_matches.subcommand() {
-            Some(("show", _)) => show(),
-            Some(("set", set_matches)) => {
-                let field = set_matches.get_one::<String>("field").map(|s| s.as_str());
-                let value = set_matches.get_one::<String>("value").map(|s| s.as_str());
-                set_item(field, value)
-            }
-            _ => {
-                show() // 默认显示配置
-            }
+pub fn execute(config_matches: &ArgMatches) -> Result<()> {
+    match config_matches.subcommand() {
+        Some(("show", _)) => show(),
+        Some(("set", set_matches)) => {
+            let field = set_matches.get_one::<String>("field").map(|s| s.as_str());
+            let value = set_matches.get_one::<String>("value").map(|s| s.as_str());
+            set_item(field, value)
         }
-    } else {
-        Ok(())
+        _ => {
+            show() // 默认显示配置
+        }
     }
 }
 

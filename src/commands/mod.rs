@@ -1,6 +1,7 @@
 pub mod config;
 pub mod draft;
 pub mod install;
+pub mod uninstall;
 pub mod version;
 
 use crate::core::i18n::t;
@@ -17,23 +18,25 @@ pub fn register_command() -> Command {
     // 各模块注册自己的命令
     version::register_command(&mut app);
     install::register_command(&mut app);
+    uninstall::register_command(&mut app);
     config::register_command(&mut app);
     draft::register_command(&mut app);
 
     app
 }
 
-pub fn handle_command(matches: &ArgMatches) -> Result<()> {
-    // 让各个模块自己处理命令
-    version::handle_command(matches)?;
-    install::handle_command(matches)?;
-    config::handle_command(matches)?;
-    draft::handle_command(matches)?;
-
-    // 如果没有匹配的子命令，显示默认信息
-    if matches.subcommand().is_none() {
-        println!("{}", t!("general.default_message"));
+pub fn handle_command(app: &mut Command, matches: &ArgMatches) -> Result<()> {
+    match matches.subcommand() {
+        Some(("version", _)) => version::execute(),
+        Some(("install", _)) => install::execute(),
+        Some(("uninstall", _)) => uninstall::execute(),
+        Some(("config", config_matches)) => config::execute(config_matches),
+        Some(("draft", _)) => draft::execute(),
+        _ => {
+            // 如果没有匹配的子命令，显示帮助信息
+            app.print_help()?;
+            println!(); // 添加一个换行
+            Ok(())
+        }
     }
-
-    Ok(())
 }
