@@ -3,52 +3,52 @@ description:
 globs: 
 alwaysApply: false
 ---
-# Context Prime
+# 项目加载 (Context Prime)
 
-Prime Claude with comprehensive project understanding.
+对项目有一个全面的了解。
 
-## Standard Context Loading:
-1. Read README.md for project overview
-2. Read CLAUDE.md for AI-specific instructions
-3. List project files excluding ignored paths
-4. Review key configuration files
-5. Understand project structure and conventions
+## 标准上下文加载
+1.  阅读 README.md 以了解项目概览
+2.  阅读 docs/AI.md 以获取 AI 的特定指令
+3.  列出项目文件，不包括被忽略的路径
+4.  检查关键配置文件
+5.  理解项目结构和约定
 
-## Steps:
-1. **Project Overview**:
-   - Read README.md
-   - Identify project type and purpose
-   - Note key technologies and dependencies
+## 步骤
+1.  **项目概览**:
+    -   阅读 README.md
+    -   确定项目类型和目的
+    -   记录关键技术和依赖
 
-2. **AI Guidelines**:
-   - Read CLAUDE.md if present
-   - Load project-specific AI instructions
-   - Note coding standards and preferences
+2.  **AI 指南**:
+    -   如果 docs/AI.md 存在，则阅读它
+    -   加载项目特定的 AI 指令
+    -   记录编码标准和偏好
 
-3. **Repository Structure**:
-   - Run: `git ls-files | head -50` for initial structure
-   - Identify main directories and their purposes
-   - Note naming conventions
+3.  **仓库结构**:
+    -   运行：`git ls-files | head -50` 来获取初始结构
+    -   确定主目录及其用途
+    -   记录命名约定
 
-4. **Configuration Review**:
-   - Package manager files (package.json, Cargo.toml, etc.)
-   - Build configuration
-   - Environment setup
+4.  **配置检查**:
+    -   包管理器文件 Cargo.toml 等
+    -   构建配置
+    -   环境设置
 
-5. **Development Context**:
-   - Identify test framework
-   - Note CI/CD configuration
-   - Review contribution guidelines
+5.  **开发上下文**:
+    -   确定测试框架
+    -   记录 CI/CD 配置
+    -   检查贡献指南
 
-## Advanced Options:
-- Load specific subsystem context
-- Focus on particular technology stack
-- Include recent commit history
-- Load custom command definitions
+## 高级选项
+- 加载特定子系统的上下文
+- 专注于特定的技术栈
+- 包括最近的 commit 历史
+- 加载自定义命令定义
 
-## Output:
-Establish clear understanding of:
-- Project goals and constraints
-- Technical architecture
-- Development workflow
-- Collaboration parameters
+## 输出
+清晰地理解：
+- 项目目标和约束
+- 技术架构
+- 开发工作流
+- 协作参数

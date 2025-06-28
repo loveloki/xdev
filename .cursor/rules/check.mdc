@@ -3,40 +3,32 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Check
+# 检查
 
-Perform comprehensive code quality and security checks.
+执行全面的代码质量和安全检查。
 
-## Primary Task:
-Run `npm run check` (or project-specific check command) and resolve any resulting errors.
+## 主要任务
+运行 `cargo check`, `cargo clippy` 并解决所有由此产生的错误。
 
-## Important:
-- DO NOT commit any code during this process
-- DO NOT change version numbers
-- Focus only on fixing issues identified by checks
+## 重要事项
+- 在此过程中 **不要** 提交任何代码
+- **不要** 更改版本号
+- **只专注于** 修复检查发现的问题
 
-## Common Checks Include:
-1. **Linting**: Code style and syntax errors
-2. **Type Checking**: TypeScript/Flow type errors
-3. **Unit Tests**: Failing test cases
-4. **Security Scan**: Vulnerability detection
-5. **Code Formatting**: Style consistency
-6. **Build Verification**: Compilation errors
+## 常见的检查包括
+1.  **代码规范 (Linting)**：代码风格和语法错误
+3.  **单元测试 (Unit Tests)**：失败的测试用例
+4.  **安全扫描 (Security Scan)**：漏洞检测
+5.  **代码格式化 (Code Formatting)**：风格一致性
+6.  **构建验证 (Build Verification)**：编译错误
 
-## Process:
-1. Run the check command
-2. Analyze output for errors and warnings
-3. Fix issues in priority order:
-   - Build-breaking errors first
-   - Test failures
-   - Linting errors
-   - Warnings
-4. Re-run checks after each fix
-5. Continue until all checks pass
-
-## For Different Project Types:
-- **JavaScript/TypeScript**: `npm run check` or `yarn check`
-- **Python**: `black`, `isort`, `flake8`, `mypy`
-- **Rust**: `cargo check`, `cargo clippy`
-- **Go**: `go vet`, `golint`
-- **Swift**: `swift-format`, `swiftlint`
+## 流程
+1.  运行检查命令
+2.  分析输出的错误和警告
+3.  按以下优先顺序修复问题：
+    -   首先是破坏性构建错误
+    -   测试失败
+    -   代码规范错误
+    -   警告
+4.  每次修复后重新运行检查
+5.  持续进行直到所有检查都通过

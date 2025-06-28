@@ -3,47 +3,47 @@ description:
 globs: 
 alwaysApply: false
 ---
-# Commit
+# 提交 (Commit)
 
-Create well-formatted commits with conventional commit messages and emojis.
+使用 emojis 和规范的提交信息来创建格式良好的 commit。
 
-## Features:
-- Runs pre-commit checks by default (lint, build, generate docs)
-- Automatically stages files if none are staged
-- Uses conventional commit format with descriptive emojis
-- Suggests splitting commits for different concerns
+## 特性
+- 默认运行提交前检查 (lint, build, generate docs)
+- 如果没有文件被暂存，则自动暂存文件
+- 使用带有描述性 emojis 的规范化提交格式
+- 建议将涉及不同功能的改动拆分成多次 commit
 
-## Usage:
-- `/commit` - Standard commit with pre-commit checks
-- `/commit --no-verify` - Skip pre-commit checks
+## 使用方法
+- `/commit` - 标准提交，执行提交前检查
+- `/commit --no-verify` - 跳过提交前检查
 
-## Commit Types:
-- ✨ feat: New features
-- 🐛 fix: Bug fixes
-- 📝 docs: Documentation changes
-- ♻️ refactor: Code restructuring without changing functionality
-- 🎨 style: Code formatting, missing semicolons, etc.
-- ⚡️ perf: Performance improvements
-- ✅ test: Adding or correcting tests
-- 🧑‍💻 chore: Tooling, configuration, maintenance
-- 🚧 wip: Work in progress
-- 🔥 remove: Removing code or files
-- 🚑 hotfix: Critical fixes
-- 🔒 security: Security improvements
+## 提交类型
+- ✨ feat: 新功能
+- 🐛 fix: Bug 修复
+- 📝 docs: 文档变更
+- ♻️ refactor: 代码重构，不改变其原有功能
+- 🎨 style: 代码格式化，修正分号等
+- ⚡️ perf: 性能优化
+- ✅ test: 添加或修正测试
+- 🧑‍💻 chore: 工具、配置和维护
+- 🚧 wip: 正在进行的工作
+- 🔥 remove: 移除代码或文件
+- 🚑 hotfix: 紧急修复
+- 🔒 security: 安全性提升
 
-## Process:
-1. Check for staged changes (`git status`)
-2. If no staged changes, review and stage appropriate files
-3. Run pre-commit checks (unless --no-verify)
-4. Analyze changes to determine commit type
-5. Generate descriptive commit message
-6. Include scope if applicable: `type(scope): description`
-7. Add body for complex changes explaining why
-8. Execute commit
+## 流程
+1.  检查暂存区的改动 (`git status`)
+2.  如果没有暂存的改动，检查并暂存相应的文件
+3.  运行提交前检查 (除非指定 --no-verify)
+4.  分析改动以确定提交类型
+5.  生成描述性的提交信息
+6.  如果适用，包含范围：`type(scope): description`
+7.  为复杂的改动添加正文，解释其原因
+8.  执行提交
 
-## Best Practices:
-- Keep commits atomic and focused
-- Write in imperative mood ("Add feature" not "Added feature")
-- Explain why, not just what
-- Reference issues/PRs when relevant
-- Split unrelated changes into separate commits
+## 最佳实践
+- 保持 commit 的原子性和专注性
+- 使用祈使语气 ("Add feature" 而不是 "Added feature")
+- 解释为什么，而不仅仅是做了什么
+- 在相关时引用 issues/PRs
+- 将不相关的改动拆分到不同的 commit

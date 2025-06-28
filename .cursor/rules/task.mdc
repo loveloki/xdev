@@ -3,64 +3,64 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Implement Task
+# 任务实施 (Implement Task)
 
-Approach task implementation methodically with careful planning and execution.
+通过周密的计划和执行来有条不紊地完成任务。
 
-## Process:
+## 流程
 
-### 1. Think Through Strategy
-- Understand the complete requirement
-- Identify key components needed
-- Consider dependencies and constraints
-- Plan the implementation approach
+### 1. 思考策略
+- 理解完整需求
+- 确定关键组件
+- 考虑依赖和约束
+- 规划实施方法
 
-### 2. Evaluate Approaches
-- List possible implementation strategies
-- Compare pros and cons of each
-- Consider:
-  - Performance implications
-  - Maintainability
-  - Scalability
-  - Code reusability
-  - Testing complexity
+### 2. 评估方法
+- 列出可行的实施策略
+- 比较各自的优缺点
+- 考虑:
+  - 性能影响
+  - 可维护性
+  - 可扩展性
+  - 代码复用性
+  - 测试复杂度
 
-### 3. Consider Tradeoffs
-- Short-term vs long-term benefits
-- Complexity vs simplicity
-- Performance vs readability
-- Flexibility vs focused solution
-- Time to implement vs perfect solution
+### 3. 权衡利弊
+- 短期 vs 长期利益
+- 复杂 vs 简单
+- 性能 vs 可读性
+- 灵活性 vs 专注的解决方案
+- 实施时间 vs 完美的解决方案
 
-### 4. Implementation Steps
-1. Break down into subtasks
-2. Start with core functionality
-3. Implement incrementally
-4. Test each component
-5. Integrate components
-6. Add error handling
-7. Optimize if needed
-8. Document decisions
+### 4. 实施步骤
+1.  分解为子任务
+2.  从核心功能开始
+3.  增量实施
+4.  测试每个组件
+5.  集成组件
+6.  添加错误处理
+7.  如果需要则进行优化
+8.  记录决策
 
-### 5. Best Practices
-- Write tests first (TDD approach)
-- Keep functions small and focused
-- Use meaningful names
-- Comment complex logic
-- Handle edge cases
-- Consider future maintenance
+### 5. 最佳实践
+- 测试先行 (TDD)
+- 保持函数短小精悍
+- 使用有意义的命名
+- 为复杂逻辑添加注释
+- 处理边界情况
+- 考虑未来维护
 
-### 6. Don't execute it directly
-1. Talk about the plan
-2. Waiting for response
-3. implement it after agreeing
+### 6. 不要直接执行
+1.  讨论计划
+2.  等待响应
+3.  同意后实施
 
-## Checklist:
-- [ ] Requirements fully understood
-- [ ] Approach documented
-- [ ] Tests written
-- [ ] Code implemented
-- [ ] Edge cases handled
-- [ ] Documentation updated
-- [ ] Code reviewed
-- [ ] Performance acceptable
+## 清单
+- [ ] 需求完全理解
+- [ ] 方法已记录
+- [ ] 测试已编写
+- [ ] 代码已实施
+- [ ] 边界情况已处理
+- [ ] 文档已更新
+- [ ] 代码已审查
+- [ ] 性能可接受
