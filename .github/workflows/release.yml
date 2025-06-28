@@ -144,13 +144,19 @@ jobs:
           - `xdev-x86_64-unknown-linux-gnu`: Linux x86_64
           - `xdev-aarch64-unknown-linux-gnu`: Linux ARM64
           
-          ### 📥 安装方法
+          ### 📥 安装方法 1
+          ```bash
+          # 执行
+          curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | sh
+          ```
+
+          ### 📥 安装方法 2
           ```bash
           # 下载对应架构的二进制文件
           # 为文件添加执行权限
           chmod +x xdev-*
           # 移动到 PATH 目录
-          sudo mv xdev-* /usr/local/bin/xdev
+          sudo mv xdev-* ~/.local/bin/xdev
           ```
           
           ---
