@@ -9,6 +9,7 @@ alwaysApply: false
 
 ## 标准上下文加载
 1.  阅读 README.md 以了解项目概览
+2.  阅读 docs/ANALYSIS.md 以了解项目内部实现、架构设计和核心功能
 2.  阅读 docs/AI.md 以获取 AI 的特定指令
 3.  列出项目文件，不包括被忽略的路径
 4.  检查关键配置文件
