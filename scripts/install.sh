@@ -17,36 +17,10 @@ _cleanup_needed=false
 
 # --- Main execution ---
 main() {
-    # Parse command line arguments
-    local _install_dir="$DEFAULT_INSTALL_DIR"
-    local _force_install=false
-    local _skip_path_check=false
-    
-    while [ $# -gt 0 ]; do
-        case $1 in
-            --install-dir=*)
-                _install_dir="${1#*=}"
-                ;;
-            --install-dir)
-                shift
-                _install_dir="$1"
-                ;;
-            --force)
-                _force_install=true
-                ;;
-            --skip-path-check)
-                _skip_path_check=true
-                ;;
-            --help|-h)
-                show_help
-                exit 0
-                ;;
-            *)
-                err "❌ Unknown option: $1. Use --help for usage information."
-                ;;
-        esac
-        shift
-    done
+    # This script accepts no arguments.
+    # Any arguments passed to it will be ignored.
+
+    local _executable_path="$DEFAULT_INSTALL_DIR/$BINARY_NAME"
 
     # Set up cleanup trap
     trap cleanup_on_exit EXIT INT TERM
@@ -71,17 +45,6 @@ main() {
     _temp_dir=$(mktemp -d)
     _cleanup_needed=true
 
-    # Check if already installed and handle accordingly
-    local _executable_path="$_install_dir/$BINARY_NAME"
-    if [ -f "$_executable_path" ] && [ "$_force_install" = false ]; then
-        local _current_version
-        if _current_version=$("$_executable_path" version 2>/dev/null | grep -o 'xdev [0-9.]*' | cut -d ' ' -f 2); then
-            say "ℹ️  xdev is already installed (version: ${_current_version})"
-            say "   Use --force to reinstall"
-            return 0
-        fi
-    fi
-
     # Get latest release information
     say "🔍 Fetching latest release information..."
     local _release_info_file="$_temp_dir/release.json"
@@ -92,38 +55,29 @@ main() {
              --user-agent "xdev-installer/1.0" \
              "$GITHUB_API_URL" \
              --output "$_release_info_file"; then
-        say "⚠️  GitHub API failed, trying fallback method..."
-        get_version_fallback || return 1
-        local _version="$RETVAL"
-    else
-        parse_release_info "$_release_info_file" || return 1
-        local _version="$RETVAL"
-        local _checksum="$RETVAL2"
-        
-        # Extract architecture-specific checksum from digest field
-        local _asset_name="xdev-${_arch}"
-        if grep -q "\"name\":\"${_asset_name}\"" "$_release_info_file"; then
-            _checksum=$(grep -A 10 "\"name\":\"${_asset_name}\"" "$_release_info_file" | grep -o '"digest":"sha256:[^"]*"' | cut -d ':' -f 3 | tr -d '"' | head -1)
-        fi
+        err "❌ Failed to fetch release information from GitHub API."
+    fi
+
+    parse_release_info "$_release_info_file" || return 1
+    local _version="$RETVAL"
+    
+    local _asset_name="xdev-${_arch}"
+    local _checksum=""
+    # Extract architecture-specific checksum from digest field
+    if grep -q "\"name\":\"${_asset_name}\"" "$_release_info_file"; then
+        _checksum=$(grep -A 10 "\"name\":\"${_asset_name}\"" "$_release_info_file" | grep -o '"digest":"sha256:[^"]*"' | cut -d ':' -f 3 | tr -d '"' | head -1)
     fi
 
     assert_nz "$_version" "version"
     say "✅ Latest version: ${_version}"
 
     # Construct download URLs
-    local _asset_name="xdev-${_arch}"
     local _download_url="https://github.com/${GITHUB_REPO}/releases/download/${_version}/${_asset_name}"
-    local _checksum_url="https://github.com/${GITHUB_REPO}/releases/download/${_version}/checksums.txt"
 
     # Prepare installation directory
-    say "📁 Preparing installation directory: ${_install_dir}"
-    if [ ! -d "$_install_dir" ]; then
-        ensure mkdir -p "$_install_dir"
-    fi
-
-    # Check write permissions
-    if [ ! -w "$_install_dir" ]; then
-        err "❌ No write permission for ${_install_dir}. Try running with sudo or choose a different directory with --install-dir"
+    say "📁 Preparing installation directory: $DEFAULT_INSTALL_DIR"
+    if [ ! -d "$DEFAULT_INSTALL_DIR" ]; then
+        ensure mkdir -p "$DEFAULT_INSTALL_DIR"
     fi
 
     # Download binary
@@ -139,26 +93,14 @@ main() {
         err "❌ Failed to download binary from ${_download_url}"
     fi
 
-    # Verify checksum if available
-    if [ -n "${_checksum:-}" ]; then
-        say "🔒 Verifying checksum..."
-        verify_checksum "$_binary_path" "$_checksum" || return 1
-        say "✅ Checksum verification passed"
-    else
-        say "⚠️  Checksum verification skipped (not available from API)"
-        # Try to download checksums file as fallback
-        if curl --fail --location --silent --show-error \
-               --connect-timeout "$CURL_TIMEOUT" \
-               --max-time "$CURL_MAX_TIME" \
-               "$_checksum_url" \
-               --output "$_temp_dir/checksums.txt" 2>/dev/null; then
-            if verify_checksum_from_file "$_binary_path" "$_asset_name" "$_temp_dir/checksums.txt"; then
-                say "✅ Checksum verification passed (from checksums file)"
-            else
-                say "⚠️  Checksum verification failed, but continuing..."
-            fi
-        fi
+    # Verify checksum
+    if [ -z "${_checksum:-}" ]; then
+        err "❌ Could not find checksum for asset ${_asset_name} from GitHub API."
     fi
+
+    say "🔒 Verifying checksum..."
+    verify_checksum "$_binary_path" "$_checksum"
+    say "✅ Checksum verification passed"
 
     # Install binary
     say "📦 Installing to ${_executable_path}..."
@@ -170,52 +112,16 @@ main() {
         err "❌ Installation verification failed. The binary may be corrupted."
     fi
 
-    # Check PATH and provide guidance
-    if [ "$_skip_path_check" = false ]; then
-        check_path_and_advise "$_install_dir"
-    fi
-
     # Success message
     say ""
     say "🎉 xdev ${_version} installed successfully!"
     say "   Location: ${_executable_path}"
-    
-    # Test if command is available
-    if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-        say "✅ xdev is ready to use. Try: xdev --help"
-    else
-        say "💡 To use xdev, make sure ${_install_dir} is in your PATH"
-    fi
+    say "💡 To use xdev, make sure $DEFAULT_INSTALL_DIR is in your PATH"
 
     return 0
 }
 
 # --- Helper functions ---
-
-show_help() {
-    cat << 'EOF'
-xdev installer
-
-USAGE:
-    install.sh [OPTIONS]
-
-OPTIONS:
-    --install-dir <DIR>    Install directory (default: ~/.local/bin)
-    --force               Force reinstall even if already installed
-    --skip-path-check     Skip PATH checking and advice
-    -h, --help            Show this help message
-
-EXAMPLES:
-    # Install to default location
-    ./install.sh
-
-    # Install to custom directory
-    ./install.sh --install-dir=/usr/local/bin
-
-    # Force reinstall
-    ./install.sh --force
-EOF
-}
 
 get_architecture() {
     local _ostype _cputype _arch
@@ -257,28 +163,6 @@ parse_release_info() {
     if [ -z "$_version" ]; then
         err "❌ Could not parse version from GitHub API response"
     fi
-
-    # Extract checksum from digest field (no need to pass architecture here, will be handled in main)
-    local _checksum=""
-    
-    RETVAL="$_version"
-    RETVAL2="$_checksum"
-}
-
-get_version_fallback() {
-    say "🔄 Using fallback method to get version..."
-    local _latest_url
-    _latest_url=$(curl -s -L -o /dev/null -w '%{url_effective}' \
-                      --connect-timeout "$CURL_TIMEOUT" \
-                      --max-time "$CURL_MAX_TIME" \
-                      "https://github.com/${GITHUB_REPO}/releases/latest")
-    
-    local _version
-    _version=$(echo "$_latest_url" | grep -o 'v[0-9][0-9.]*[0-9]\|v[0-9]' | head -1)
-
-    if [ -z "$_version" ]; then
-        err "❌ Could not resolve the latest version. Please check https://github.com/${GITHUB_REPO}/releases"
-    fi
     
     RETVAL="$_version"
 }
@@ -287,82 +171,12 @@ verify_checksum() {
     local _file="$1"
     local _expected_checksum="$2"
     
-    if [ -z "$_expected_checksum" ]; then
-        return 1
-    fi
-    
     local _actual_checksum
     _actual_checksum=$(sha256sum "$_file" | cut -d ' ' -f 1)
     
     if [ "$_actual_checksum" != "$_expected_checksum" ]; then
         err "❌ Checksum verification failed! Expected: $_expected_checksum, Got: $_actual_checksum"
     fi
-}
-
-verify_checksum_from_file() {
-    local _file="$1"
-    local _asset_name="$2"
-    local _checksums_file="$3"
-    
-    if [ ! -f "$_checksums_file" ]; then
-        return 1
-    fi
-    
-    local _expected_checksum
-    _expected_checksum=$(grep "$_asset_name" "$_checksums_file" | cut -d ' ' -f 1)
-    
-    if [ -z "$_expected_checksum" ]; then
-        return 1
-    fi
-    
-    verify_checksum "$_file" "$_expected_checksum"
-}
-
-check_path_and_advise() {
-    local _install_dir="$1"
-    
-    say "🔍 Checking PATH configuration..."
-    
-    # Check if install directory is in PATH
-    case ":$PATH:" in
-        *":$_install_dir:"*)
-            say "✅ ${_install_dir} is already in your PATH"
-            return 0
-            ;;
-    esac
-    
-    say "💡 ${_install_dir} is not in your PATH"
-    say ""
-    say "To add it permanently, add this line to your shell profile:"
-    
-    # Detect shell and provide specific advice
-    local _shell_profile=""
-    case "${SHELL:-}" in
-        */bash)
-            _shell_profile="~/.bashrc or ~/.bash_profile"
-            ;;
-        */zsh)
-            _shell_profile="~/.zshrc"
-            ;;
-        */fish)
-            _shell_profile="~/.config/fish/config.fish"
-            say "  set -gx PATH $_install_dir \$PATH"
-            say ""
-            say "Or run this command now:"
-            say "  fish_add_path $_install_dir"
-            return 0
-            ;;
-        *)
-            _shell_profile="your shell profile"
-            ;;
-    esac
-    
-    say "  export PATH=\"$_install_dir:\$PATH\""
-    say ""
-    say "Add it to: $_shell_profile"
-    say ""
-    say "Or run this command for the current session:"
-    say "  export PATH=\"$_install_dir:\$PATH\""
 }
 
 cleanup_on_exit() {
