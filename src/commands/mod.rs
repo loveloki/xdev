@@ -1,4 +1,5 @@
 pub mod config;
+pub mod draft;
 pub mod install;
 pub mod version;
 
@@ -17,6 +18,7 @@ pub fn register_command() -> Command {
     version::register_command(&mut app);
     install::register_command(&mut app);
     config::register_command(&mut app);
+    draft::register_command(&mut app);
 
     app
 }
@@ -26,6 +28,7 @@ pub fn handle_command(matches: &ArgMatches) -> Result<()> {
     version::handle_command(matches)?;
     install::handle_command(matches)?;
     config::handle_command(matches)?;
+    draft::handle_command(matches)?;
 
     // 如果没有匹配的子命令，显示默认信息
     if matches.subcommand().is_none() {

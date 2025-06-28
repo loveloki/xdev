@@ -20,6 +20,11 @@ command:
   
   config:
     description: "Manage configuration"
+
+  draft:
+    description: "Find the latest draft directory"
+    found: "✅ Found draft directory"
+    error: "❌ Error"
     show:
       description: "Show current configuration"
       title: "📋 Configuration (%{path})"
@@ -56,6 +61,9 @@ error:
   current_exe_failed: "Failed to get current executable path"
   current_dir_failed: "Failed to get current directory"
   config_dir_not_found: "Could not find config directory"
+  zdocs_not_found: "zdocs directory does not exist: %{path}"
+  no_subdirs_found: "No subdirectories found in %{path}"
+  draft_not_found: "No draft directory with all required files found in %{path}"
 
 general:
   default_message: "xdev CLI tool - use --help for more information"
