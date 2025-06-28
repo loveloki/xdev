@@ -75,7 +75,7 @@ main() {
     local _executable_path="$_install_dir/$BINARY_NAME"
     if [ -f "$_executable_path" ] && [ "$_force_install" = false ]; then
         local _current_version
-        if _current_version=$("$_executable_path" --version 2>/dev/null | grep -o 'v[0-9.]*' | head -1); then
+        if _current_version=$("$_executable_path" version 2>/dev/null | grep -o 'xdev [0-9.]*' | cut -d ' ' -f 2); then
             say "ℹ️  xdev is already installed (version: ${_current_version})"
             say "   Use --force to reinstall"
             return 0
@@ -99,6 +99,12 @@ main() {
         parse_release_info "$_release_info_file" || return 1
         local _version="$RETVAL"
         local _checksum="$RETVAL2"
+        
+        # Extract architecture-specific checksum from digest field
+        local _asset_name="xdev-${_arch}"
+        if grep -q "\"name\":\"${_asset_name}\"" "$_release_info_file"; then
+            _checksum=$(grep -A 10 "\"name\":\"${_asset_name}\"" "$_release_info_file" | grep -o '"digest":"sha256:[^"]*"' | cut -d ':' -f 3 | tr -d '"' | head -1)
+        fi
     fi
 
     assert_nz "$_version" "version"
@@ -160,7 +166,7 @@ main() {
     ensure chmod +x "$_executable_path"
 
     # Verify installation
-    if ! "$_executable_path" --version >/dev/null 2>&1; then
+    if ! "$_executable_path" version >/dev/null 2>&1; then
         err "❌ Installation verification failed. The binary may be corrupted."
     fi
 
@@ -244,20 +250,16 @@ get_architecture() {
 parse_release_info() {
     local _release_file="$1"
     
-    # Extract version tag
+    # Extract version tag using more precise regex for compressed JSON
     local _version
-    _version=$(grep '"tag_name"' "$_release_file" | cut -d '"' -f 4)
+    _version=$(grep -o '"tag_name":"[^"]*"' "$_release_file" | cut -d '"' -f 4)
     
     if [ -z "$_version" ]; then
         err "❌ Could not parse version from GitHub API response"
     fi
 
-    # Try to extract checksum if available in release assets
+    # Extract checksum from digest field (no need to pass architecture here, will be handled in main)
     local _checksum=""
-    if grep -q '"name".*"checksums\|sha256' "$_release_file"; then
-        # This is a simplified approach - in a real scenario, you'd parse the JSON more carefully
-        _checksum=$(grep -A 5 -B 5 '"name".*"checksums\|sha256' "$_release_file" | grep '"browser_download_url"' | cut -d '"' -f 4 || true)
-    fi
     
     RETVAL="$_version"
     RETVAL2="$_checksum"
