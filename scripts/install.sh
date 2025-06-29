@@ -61,7 +61,14 @@ check_system_requirements() {
   need_cmd curl
   need_cmd grep
   need_cmd jq
-  need_cmd sha256sum
+  
+  # 根据操作系统检查对应的校验工具
+  local os_type="$(uname -s)"
+  if [ "$os_type" = "Darwin" ]; then
+    need_cmd shasum
+  else
+    need_cmd sha256sum
+  fi
 }
 
 detect_architecture() {
@@ -160,9 +167,19 @@ show_success_message() {
   if echo "$PATH" | grep -q "$DEFAULT_INSTALL_DIR"; then
     say "✅ $DEFAULT_INSTALL_DIR is already in your PATH - you can use xdev immediately!"
   else
+    local os_type="$(uname -s)"
     say "💡 To use xdev, you need to add $DEFAULT_INSTALL_DIR to your PATH."
-    say "   You can add it by running: echo 'export PATH=\"$DEFAULT_INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
-    say "   Then restart your terminal or run: source ~/.bashrc"
+    
+    if [ "$os_type" = "Darwin" ]; then
+      # macOS 说明
+      say "   For Bash: echo 'export PATH=\"$DEFAULT_INSTALL_DIR:\$PATH\"' >> ~/.bash_profile"
+      say "   For Zsh:  echo 'export PATH=\"$DEFAULT_INSTALL_DIR:\$PATH\"' >> ~/.zshrc"
+      say "   Then restart your terminal or run: source ~/.bash_profile (or ~/.zshrc)"
+    else
+      # Linux 说明
+      say "   You can add it by running: echo 'export PATH=\"$DEFAULT_INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
+      say "   Then restart your terminal or run: source ~/.bashrc"
+    fi
   fi
 }
 
@@ -176,8 +193,11 @@ get_architecture() {
     Linux)
       OSTYPE="unknown-linux-gnu"
       ;;
+    Darwin)
+      OSTYPE="apple-darwin"
+      ;;
     *)
-      err "❌ Unsupported OS: ${OSTYPE}"
+      err "❌ Unsupported OS: ${OSTYPE}. Supported: Linux, macOS (Darwin)"
       ;;
   esac
 
@@ -189,7 +209,7 @@ get_architecture() {
       CPUTYPE="aarch64"
       ;;
     *)
-      err "❌ Unsupported architecture: ${CPUTYPE}"
+      err "❌ Unsupported architecture: ${CPUTYPE}. Supported: x86_64, aarch64"
       ;;
   esac
 
@@ -197,7 +217,26 @@ get_architecture() {
 }
 
 verify_checksum() {
-  ACTUAL_CHECKSUM=$(sha256sum "$BINARY_PATH" | cut -d ' ' -f 1)
+  # 根据操作系统选择合适的校验工具
+  local os_type="$(uname -s)"
+  
+  if [ "$os_type" = "Darwin" ]; then
+    # macOS 使用 shasum
+    if command -v shasum >/dev/null 2>&1; then
+      ACTUAL_CHECKSUM=$(shasum -a 256 "$BINARY_PATH" | cut -d ' ' -f 1)
+    else
+      say "❌ 'shasum' command not found. Cannot verify checksum on macOS." >&2
+      return 1
+    fi
+  else
+    # Linux 使用 sha256sum
+    if command -v sha256sum >/dev/null 2>&1; then
+      ACTUAL_CHECKSUM=$(sha256sum "$BINARY_PATH" | cut -d ' ' -f 1)
+    else
+      say "❌ 'sha256sum' command not found. Cannot verify checksum on Linux." >&2
+      return 1
+    fi
+  fi
 
   if [ "$ACTUAL_CHECKSUM" != "$CHECKSUM" ]; then
     say "❌ Checksum verification failed! Expected: $CHECKSUM, Got: $ACTUAL_CHECKSUM" >&2
@@ -228,23 +267,36 @@ need_cmd() {
     say "🔍 Command '$cmd' not found. Attempting to install..."
 
     local pkg_manager=""
-    if check_cmd apt-get; then
-      pkg_manager="apt-get"
-    elif check_cmd yum; then
-      pkg_manager="yum"
-    elif check_cmd dnf; then
-      pkg_manager="dnf"
-    elif check_cmd pacman; then
-      pkg_manager="pacman"
-    elif check_cmd apk; then
-      pkg_manager="apk"
+    local os_type="$(uname -s)"
+    
+    if [ "$os_type" = "Darwin" ]; then
+      # macOS 使用 Homebrew
+      if check_cmd brew; then
+        pkg_manager="brew"
+      else
+        err "❌ Homebrew not found on macOS. Please install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      fi
     else
-      err "❌ Could not find a supported package manager (apt-get, yum, dnf, pacman, apk). Please install '$cmd' manually."
+      # Linux 使用各种包管理器
+      if check_cmd apt-get; then
+        pkg_manager="apt-get"
+      elif check_cmd yum; then
+        pkg_manager="yum"
+      elif check_cmd dnf; then
+        pkg_manager="dnf"
+      elif check_cmd pacman; then
+        pkg_manager="pacman"
+      elif check_cmd apk; then
+        pkg_manager="apk"
+      else
+        err "❌ Could not find a supported package manager (apt-get, yum, dnf, pacman, apk). Please install '$cmd' manually."
+      fi
     fi
 
     say "📦 Using $pkg_manager to install $cmd..."
 
     case "$pkg_manager" in
+    brew) brew install "$cmd" ;;
     apt-get) $SUDO apt-get update -y && $SUDO apt-get install -y "$cmd" ;;
     yum) $SUDO yum install -y "$cmd" ;;
     dnf) $SUDO dnf install -y "$cmd" ;;
