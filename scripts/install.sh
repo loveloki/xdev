@@ -11,30 +11,41 @@ readonly GITHUB_API_URL="https://api.github.com/repos/${GITHUB_REPO}/releases/la
 readonly CURL_TIMEOUT=30
 readonly CURL_MAX_TIME=300
 
+# --- Global variables ---
+ARCH=""
+ASSET_NAME=""
+VERSION=""
+CHECKSUM=""
+BINARY_PATH=""
+EXECUTABLE_PATH=""
+API_RESPONSE=""
+DOWNLOAD_URL=""
+OSTYPE=""
+CPUTYPE=""
+ACTUAL_CHECKSUM=""
+ASSET_JSON=""
+SUDO=""
+
+setup_sudo() {
+  if [ "$(id -u)" -ne 0 ]; then
+    if ! check_cmd sudo; then
+      err "❌ This script requires root privileges to install dependencies, but sudo is not found. Please run as root or install sudo."
+    fi
+    SUDO="sudo"
+  fi
+}
+
 # --- Main execution ---
 main() {
   # This script accepts no arguments and will ignore any provided.
 
+  setup_sudo
   check_system_requirements
-
-  local _arch
   detect_architecture
-  _arch="$RETVAL"
-
-  local _version _checksum
-  fetch_release_info "$_arch"
-  _version="$RETVAL_VERSION"
-  _checksum="$RETVAL_CHECKSUM"
-
-  local _binary_path
-  download_install_and_verify "$_arch" "$_version" "$_checksum"
-  _binary_path="$RETVAL"
-
-  local _executable_path
-  finalize_installation "$_binary_path"
-  _executable_path="$RETVAL"
-
-  show_success_message "$_version" "$_executable_path"
+  fetch_release_info
+  download_install_and_verify
+  finalize_installation
+  show_success_message
 
   return 0
 }
@@ -49,59 +60,47 @@ check_system_requirements() {
   need_cmd mkdir
   need_cmd curl
   need_cmd grep
-  need_cmd cut
+  need_cmd jq
   need_cmd sha256sum
 }
 
 detect_architecture() {
   get_architecture || return 1
-  local _arch="$RETVAL"
-  assert_nz "$_arch" "arch"
-  say "✅ Detected architecture: ${_arch}"
-
-  RETVAL="$_arch"
+  assert_nz "$ARCH" "arch"
+  ASSET_NAME="xdev-${ARCH}"
+  say "✅ Detected architecture: ${ARCH}"
 }
 
 fetch_release_info() {
-  local _arch="$1"
-
   say "🔍 Fetching latest release information..."
 
   # Fetch API response directly into variable
-  local _api_response
-  _api_response=$(curl --fail --location --silent --show-error \
+  API_RESPONSE=$(curl --fail --location --silent --show-error \
     --connect-timeout "$CURL_TIMEOUT" \
     --max-time "$CURL_MAX_TIME" \
     --user-agent "xdev-installer/1.0" \
     "$GITHUB_API_URL") || err "❌ Failed to fetch release information from GitHub API."
 
-  # Parse version from API response
-  local _version
-  _version=$(echo "$_api_response" | grep -o '"tag_name":"[^"]*"' | cut -d '"' -f 4)
+  # Parse release info using jq
+  VERSION=$(echo "$API_RESPONSE" | jq -r '.tag_name')
+  ASSET_JSON=$(echo "$API_RESPONSE" | jq --arg asset_name "$ASSET_NAME" '.assets[] | select(.name == $asset_name)')
 
-  if [ -z "$_version" ]; then
+  if [ -z "$VERSION" ] || [ "$VERSION" == "null" ]; then
     err "❌ Could not parse version from GitHub API response"
   fi
 
-  # Extract architecture-specific checksum from digest field
-  local _asset_name="xdev-${_arch}"
-  local _checksum=""
-  if echo "$_api_response" | grep -q "\"name\":\"${_asset_name}\""; then
-    _checksum=$(echo "$_api_response" | grep -A 10 "\"name\":\"${_asset_name}\"" | grep -o '"digest":"sha256:[^"]*"' | cut -d ':' -f 3 | tr -d '"' | head -1)
+  if [ -z "$ASSET_JSON" ] || [ "$ASSET_JSON" == "null" ]; then
+    err "❌ Could not find asset for ${ASSET_NAME} from GitHub API response."
   fi
 
-  assert_nz "$_version" "version"
-  say "✅ Latest version: ${_version}"
+  DOWNLOAD_URL=$(echo "$ASSET_JSON" | jq -r '.browser_download_url')
+  CHECKSUM=$(echo "$ASSET_JSON" | jq -r '.digest | split(":")[1]')
 
-  RETVAL_VERSION="$_version"
-  RETVAL_CHECKSUM="$_checksum"
+  assert_nz "$VERSION" "version"
+  say "✅ Latest version: ${VERSION}"
 }
 
 download_install_and_verify() {
-  local _arch="$1"
-  local _version="$2"
-  local _checksum="$3"
-
   # Prepare installation directory
   say "📁 Preparing installation directory: $DEFAULT_INSTALL_DIR"
   if [ ! -d "$DEFAULT_INSTALL_DIR" ]; then
@@ -109,61 +108,53 @@ download_install_and_verify() {
   fi
 
   # Construct download URL and target path
-  local _download_url="https://github.com/${GITHUB_REPO}/releases/download/${_version}/xdev-${_arch}"
-  local _binary_path="$DEFAULT_INSTALL_DIR/$BINARY_NAME"
+  BINARY_PATH="$DEFAULT_INSTALL_DIR/$BINARY_NAME"
 
-  say "⏳ Downloading xdev ${_version} for ${_arch}..."
+  say "⏳ Downloading xdev ${VERSION} for ${ARCH}..."
 
   if ! curl --fail --location --progress-bar \
     --connect-timeout "$CURL_TIMEOUT" \
     --max-time "$CURL_MAX_TIME" \
     --user-agent "xdev-installer/1.0" \
-    "$_download_url" \
-    --output "$_binary_path"; then
+    "$DOWNLOAD_URL" \
+    --output "$BINARY_PATH"; then
     # Clean up partial download on failure
-    [ -f "$_binary_path" ] && rm -f "$_binary_path"
-    err "❌ Failed to download binary from ${_download_url}"
+    [ -f "$BINARY_PATH" ] && rm -f "$BINARY_PATH"
+    err "❌ Failed to download binary from ${DOWNLOAD_URL}"
   fi
 
   # Verify checksum
-  if [ -z "${_checksum:-}" ]; then
-    rm -f "$_binary_path"
-    err "❌ Could not find checksum for asset xdev-${_arch} from GitHub API."
+  if [ -z "${CHECKSUM:-}" ]; then
+    rm -f "$BINARY_PATH"
+    err "❌ Could not find checksum for asset ${ASSET_NAME} from GitHub API."
   fi
 
   say "🔒 Verifying checksum..."
-  if ! verify_checksum "$_binary_path" "$_checksum"; then
-    rm -f "$_binary_path"
+  if ! verify_checksum; then
+    rm -f "$BINARY_PATH"
     err "❌ Checksum verification failed"
   fi
   say "✅ Checksum verification passed"
-
-  RETVAL="$_binary_path"
 }
 
 finalize_installation() {
-  local _binary_path="$1"
-
   # Set executable permissions
   say "📦 Finalizing installation..."
-  ensure chmod +x "$_binary_path"
+  ensure chmod +x "$BINARY_PATH"
 
   # Verify installation
-  if ! "$_binary_path" version >/dev/null 2>&1; then
-    rm -f "$_binary_path"
+  if ! "$BINARY_PATH" version >/dev/null 2>&1; then
+    rm -f "$BINARY_PATH"
     err "❌ Installation verification failed. The downloaded binary is not working correctly."
   fi
 
-  RETVAL="$_binary_path"
+  EXECUTABLE_PATH="$BINARY_PATH"
 }
 
 show_success_message() {
-  local _version="$1"
-  local _executable_path="$2"
-
   say ""
-  say "🎉 xdev ${_version} installed successfully!"
-  say "   Location: ${_executable_path}"
+  say "🎉 xdev ${VERSION} installed successfully!"
+  say "   Location: ${EXECUTABLE_PATH}"
 
   # Check if the directory is already in PATH
   if echo "$PATH" | grep -q "$DEFAULT_INSTALL_DIR"; then
@@ -178,44 +169,38 @@ show_success_message() {
 # --- Helper functions ---
 
 get_architecture() {
-  local _ostype _cputype _arch
-  _ostype="$(uname -s)"
-  _cputype="$(uname -m)"
+  OSTYPE="$(uname -s)"
+  CPUTYPE="$(uname -m)"
 
-  case "$_ostype" in
+  case "$OSTYPE" in
     Linux)
-      _ostype="unknown-linux-gnu"
+      OSTYPE="unknown-linux-gnu"
       ;;
     *)
-      err "❌ Unsupported OS: ${_ostype}"
+      err "❌ Unsupported OS: ${OSTYPE}"
       ;;
   esac
 
-  case "$_cputype" in
+  case "$CPUTYPE" in
     x86_64 | amd64)
-      _cputype="x86_64"
+      CPUTYPE="x86_64"
       ;;
     aarch64 | arm64)
-      _cputype="aarch64"
+      CPUTYPE="aarch64"
       ;;
     *)
-      err "❌ Unsupported architecture: ${_cputype}"
+      err "❌ Unsupported architecture: ${CPUTYPE}"
       ;;
   esac
 
-  _arch="${_cputype}-${_ostype}"
-  RETVAL="$_arch"
+  ARCH="${CPUTYPE}-${OSTYPE}"
 }
 
 verify_checksum() {
-  local _file="$1"
-  local _expected_checksum="$2"
+  ACTUAL_CHECKSUM=$(sha256sum "$BINARY_PATH" | cut -d ' ' -f 1)
 
-  local _actual_checksum
-  _actual_checksum=$(sha256sum "$_file" | cut -d ' ' -f 1)
-
-  if [ "$_actual_checksum" != "$_expected_checksum" ]; then
-    say "❌ Checksum verification failed! Expected: $_expected_checksum, Got: $_actual_checksum" >&2
+  if [ "$ACTUAL_CHECKSUM" != "$CHECKSUM" ]; then
+    say "❌ Checksum verification failed! Expected: $CHECKSUM, Got: $ACTUAL_CHECKSUM" >&2
     return 1
   fi
 
@@ -232,9 +217,51 @@ err() {
 }
 
 need_cmd() {
-  if ! check_cmd "$1"; then
-    err "❌ Required command not found: '$1'. Please install it first."
+  local cmd="$1"
+  if check_cmd "$cmd"; then
+    return 0 # Command exists, do nothing.
   fi
+
+  # If command does not exist, check if it's one we can auto-install.
+  case "$cmd" in
+  curl | jq)
+    say "🔍 Command '$cmd' not found. Attempting to install..."
+
+    local pkg_manager=""
+    if check_cmd apt-get; then
+      pkg_manager="apt-get"
+    elif check_cmd yum; then
+      pkg_manager="yum"
+    elif check_cmd dnf; then
+      pkg_manager="dnf"
+    elif check_cmd pacman; then
+      pkg_manager="pacman"
+    elif check_cmd apk; then
+      pkg_manager="apk"
+    else
+      err "❌ Could not find a supported package manager (apt-get, yum, dnf, pacman, apk). Please install '$cmd' manually."
+    fi
+
+    say "📦 Using $pkg_manager to install $cmd..."
+
+    case "$pkg_manager" in
+    apt-get) $SUDO apt-get update -y && $SUDO apt-get install -y "$cmd" ;;
+    yum) $SUDO yum install -y "$cmd" ;;
+    dnf) $SUDO dnf install -y "$cmd" ;;
+    pacman) $SUDO pacman -S --noconfirm "$cmd" ;;
+    apk) $SUDO apk add "$cmd" ;;
+    esac
+
+    if ! check_cmd "$cmd"; then
+      err "❌ Failed to install '$cmd' automatically. Please try installing it manually."
+    fi
+    say "✅ Successfully installed $cmd."
+    ;;
+  *)
+    # For any other command, fail as before.
+    err "❌ Required command not found: '$cmd'. Please install it first."
+    ;;
+  esac
 }
 
 check_cmd() {
