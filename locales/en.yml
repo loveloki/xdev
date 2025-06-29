@@ -42,6 +42,16 @@ command:
       continue_prompt: "Continue configuring?"
       completed: "🎉 Configuration completed!"
 
+  dns:
+    description: "Update DNS configuration"
+    checking_permissions: "🔍 Checking permissions..."
+    sudo_required: "⚠️  sudo permission required to modify /etc/hosts file"
+    sudo_instruction: "   Please enter administrator password when prompted"
+    updating_github_dns: "🌐 Updating GitHub DNS configuration..."
+    success: "✅ DNS configuration updated successfully"
+    hosts_updated: "📝 /etc/hosts file has been updated"
+    update_details: "ℹ️  Update details shown above"
+
   lang:
     description: "Language setting"
     current_prompt: "%{field} (current: %{current})"
@@ -66,6 +76,10 @@ error:
   zdocs_not_found: "zdocs directory does not exist: %{path}"
   no_subdirs_found: "No subdirectories found in %{path}"
   draft_not_found: "No draft directory with all required files found in %{path}"
+  unsupported_dns_source: "Unsupported DNS source: %{source}"
+  sudo_check_failed: "Failed to check sudo permissions"
+  dns_update_failed: "DNS update failed"
+  dns_update_command_failed: "DNS update command failed: %{error}"
 
 general:
   app_description: "A development CLI tool"
@@ -78,4 +92,5 @@ fields:
 
 help:
   config_field: "Configuration field to set"
-  config_value: "Value to set" 
+  config_value: "Value to set"
+  dns_source: "DNS source (currently supported: github)" 

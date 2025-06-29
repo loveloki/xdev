@@ -1,4 +1,5 @@
 pub mod config;
+pub mod dns;
 pub mod draft;
 pub mod install;
 pub mod uninstall;
@@ -21,6 +22,7 @@ pub fn register_command() -> Command {
     uninstall::register_command(&mut app);
     config::register_command(&mut app);
     draft::register_command(&mut app);
+    dns::register_command(&mut app);
 
     app
 }
@@ -32,6 +34,7 @@ pub fn handle_command(app: &mut Command, matches: &ArgMatches) -> Result<()> {
         Some(("uninstall", _)) => uninstall::execute(),
         Some(("config", config_matches)) => config::execute(config_matches),
         Some(("draft", _)) => draft::execute(),
+        Some(("dns", dns_matches)) => dns::execute(dns_matches),
         _ => {
             // 如果没有匹配的子命令，显示帮助信息
             app.print_help()?;

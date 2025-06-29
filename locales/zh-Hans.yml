@@ -42,6 +42,16 @@ command:
       continue_prompt: "继续配置？"
       completed: "🎉 配置完成！"
 
+  dns:
+    description: "更新 DNS 配置"
+    checking_permissions: "🔍 检查权限..."
+    sudo_required: "⚠️  需要 sudo 权限来修改 /etc/hosts 文件"
+    sudo_instruction: "   请在执行此命令时输入管理员密码"
+    updating_github_dns: "🌐 正在更新 GitHub DNS 配置..."
+    success: "✅ DNS 配置更新成功"
+    hosts_updated: "📝 /etc/hosts 文件已更新"
+    update_details: "ℹ️  更新详情已显示"
+
   lang:
     description: "语言设置"
     current_prompt: "%{field} (当前: %{current})"
@@ -66,6 +76,10 @@ error:
   zdocs_not_found: "zdocs 目录不存在：%{path}"
   no_subdirs_found: "在 %{path} 中未找到子目录"
   draft_not_found: "在 %{path} 中未找到包含所有必需文件的 draft 目录"
+  unsupported_dns_source: "不支持的 DNS 源：%{source}"
+  sudo_check_failed: "检查 sudo 权限失败"
+  dns_update_failed: "DNS 更新失败"
+  dns_update_command_failed: "DNS 更新命令执行失败：%{error}"
 
 general:
   app_description: "开发 CLI 工具"
@@ -75,6 +89,7 @@ general:
 help:
   config_field: "要设置的配置字段"
   config_value: "要设置的值"
+  dns_source: "DNS 源 (目前支持: github)"
 
 fields:
   draft_path: "草稿路径"
