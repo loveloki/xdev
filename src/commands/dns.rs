@@ -3,6 +3,17 @@ use anyhow::{Context, Result};
 use clap::{Arg, Command};
 use std::process;
 
+// 编译时确定的 DNS 更新命令
+#[cfg(target_os = "linux")]
+const DNS_UPDATE_COMMAND: &str = r#"sed -i "/# GitHub520 Host Start/Q" /etc/hosts && curl https://raw.hellogithub.com/hosts >> /etc/hosts"#;
+
+#[cfg(target_os = "macos")]
+const DNS_UPDATE_COMMAND: &str = r#"sed -i "" "/# GitHub520 Host Start/,/# Github520 Host End/d" /etc/hosts && curl https://raw.hellogithub.com/hosts | sudo tee -a /etc/hosts"#;
+
+// 不支持的平台编译时错误
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+compile_error!("DNS update is only supported on Linux and macOS platforms");
+
 pub fn register_command(app: &mut Command) {
     *app = app.clone().subcommand(
         Command::new("dns")
@@ -46,11 +57,9 @@ fn update_github_dns() -> Result<()> {
     
     println!("{}", t!("command.dns.updating_github_dns"));
     
-    // 执行 DNS 更新命令
-    let command = r#"sed -i "/# GitHub520 Host Start/Q" /etc/hosts && curl https://raw.hellogithub.com/hosts >> /etc/hosts"#;
-    
+    // 使用编译时确定的平台特定命令
     let output = process::Command::new("sudo")
-        .args(["sh", "-c", command])
+        .args(["sh", "-c", DNS_UPDATE_COMMAND])
         .output()
         .context(t!("error.dns_update_failed").to_string())?;
     
