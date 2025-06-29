@@ -200,8 +200,7 @@ jobs:
           
           ### 📥 安装方法 1
           ```bash
-          # 执行
-          curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | sh
+          curl -LSsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | bash
           ```
 
           ### 📥 安装方法 2

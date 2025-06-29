@@ -25,6 +25,7 @@ CPUTYPE=""
 ACTUAL_CHECKSUM=""
 ASSET_JSON=""
 SUDO=""
+APT_GET_UPDATED=false
 
 setup_sudo() {
   if [ "$(id -u)" -ne 0 ]; then
@@ -89,8 +90,8 @@ fetch_release_info() {
     "$GITHUB_API_URL") || err "❌ Failed to fetch release information from GitHub API."
 
   # Parse release info using jq
-  VERSION=$(echo "$API_RESPONSE" | jq -r '.tag_name')
-  ASSET_JSON=$(echo "$API_RESPONSE" | jq --arg asset_name "$ASSET_NAME" '.assets[] | select(.name == $asset_name)')
+  VERSION=$(jq -r '.tag_name' <<< "$API_RESPONSE")
+  ASSET_JSON=$(jq --arg asset_name "$ASSET_NAME" '.assets[] | select(.name == $asset_name)' <<< "$API_RESPONSE")
 
   if [ -z "$VERSION" ] || [ "$VERSION" == "null" ]; then
     err "❌ Could not parse version from GitHub API response"
@@ -100,8 +101,8 @@ fetch_release_info() {
     err "❌ Could not find asset for ${ASSET_NAME} from GitHub API response."
   fi
 
-  DOWNLOAD_URL=$(echo "$ASSET_JSON" | jq -r '.browser_download_url')
-  CHECKSUM=$(echo "$ASSET_JSON" | jq -r '.digest | split(":")[1]')
+  DOWNLOAD_URL=$(jq -r '.browser_download_url' <<< "$ASSET_JSON")
+  CHECKSUM=$(jq -r '.digest | split(":")[1]' <<< "$ASSET_JSON")
 
   assert_nz "$VERSION" "version"
   say "✅ Latest version: ${VERSION}"
@@ -297,7 +298,13 @@ need_cmd() {
 
     case "$pkg_manager" in
     brew) brew install "$cmd" ;;
-    apt-get) $SUDO apt-get update -y && $SUDO apt-get install -y "$cmd" ;;
+    apt-get)
+      if ! $APT_GET_UPDATED; then
+        $SUDO apt-get update -y
+        APT_GET_UPDATED=true
+      fi
+      $SUDO apt-get install -y "$cmd"
+      ;;
     yum) $SUDO yum install -y "$cmd" ;;
     dnf) $SUDO dnf install -y "$cmd" ;;
     pacman) $SUDO pacman -S --noconfirm "$cmd" ;;
