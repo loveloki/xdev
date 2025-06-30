@@ -54,6 +54,7 @@ pub fn execute(config_matches: &ArgMatches) -> Result<()> {
 pub struct Config {
     pub draft_path: String,
     pub lang: String,
+    pub hosts_subscriptions: Option<Vec<String>>,
 }
 
 impl Default for Config {
@@ -61,6 +62,7 @@ impl Default for Config {
         Self {
             draft_path: "/tmp/zdocs".to_string(),
             lang: "zh-Hans".to_string(),
+            hosts_subscriptions: Some(Vec::new()),
         }
     }
 }
@@ -82,6 +84,11 @@ impl Config {
 
         let mut config: Config = toml::from_str(&content)
             .with_context(|| t!("error.config_parse_failed").to_string())?;
+
+        // 兼容性处理：如果 hosts_subscriptions 字段不存在，初始化为空列表
+        if config.hosts_subscriptions.is_none() {
+            config.hosts_subscriptions = Some(Vec::new());
+        }
 
         // 设置语言
         if validate_language(&config.lang) {
@@ -131,10 +138,40 @@ impl Config {
         Ok(())
     }
 
+    // Hosts 订阅管理方法
+    pub fn add_hosts_subscription(&mut self, url: &str) -> Result<bool> {
+        if self.hosts_subscriptions.is_none() {
+            self.hosts_subscriptions = Some(Vec::new());
+        }
+        
+        let subscriptions = self.hosts_subscriptions.as_mut().unwrap();
+        if subscriptions.contains(&url.to_string()) {
+            return Ok(false); // 已存在
+        }
+        
+        subscriptions.push(url.to_string());
+        Ok(true) // 添加成功
+    }
+
+    pub fn remove_hosts_subscription(&mut self, url: &str) -> Result<bool> {
+        if let Some(subscriptions) = &mut self.hosts_subscriptions {
+            if let Some(pos) = subscriptions.iter().position(|x| x == url) {
+                subscriptions.remove(pos);
+                return Ok(true); // 删除成功
+            }
+        }
+        Ok(false) // 未找到
+    }
+
+    pub fn get_hosts_subscriptions(&self) -> Vec<String> {
+        self.hosts_subscriptions.as_ref().unwrap_or(&Vec::new()).clone()
+    }
+
     pub fn get_field(&self, field: &str) -> Result<String> {
         match field {
             "draft_path" => Ok(self.draft_path.clone()),
             "lang" => Ok(self.lang.clone()),
+            "hosts_subscriptions" => Ok(format!("{:?}", self.hosts_subscriptions.as_ref().unwrap_or(&Vec::new()))),
             _ => anyhow::bail!(t!("error.unknown_field", field = field).to_string()),
         }
     }
