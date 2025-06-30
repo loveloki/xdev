@@ -18,18 +18,18 @@ alwaysApply: false
 - `/commit --no-verify` - 跳过提交前检查
 
 ## 提交类型
-- ✨ feat: 新功能
-- 🐛 fix: Bug 修复
-- 📝 docs: 文档变更
-- ♻️ refactor: 代码重构，不改变其原有功能
-- 🎨 style: 代码格式化，修正分号等
-- ⚡️ perf: 性能优化
-- ✅ test: 添加或修正测试
-- 🧑‍💻 chore: 工具、配置和维护
-- 🚧 wip: 正在进行的工作
-- 🔥 remove: 移除代码或文件
-- 🚑 hotfix: 紧急修复
-- 🔒 security: 安全性提升
+- feat: 新功能
+- fix: Bug 修复
+- docs: 文档变更
+- refactor: 代码重构，不改变其原有功能
+- style: 代码格式化，修正分号等
+- perf: 性能优化
+- test: 添加或修正测试
+- chore: 工具、配置和维护
+- wip: 正在进行的工作
+- remove: 移除代码或文件
+- hotfix: 紧急修复
+- security: 安全性提升
 
 ## 流程
 1.  检查暂存区的改动 (`git status`)
