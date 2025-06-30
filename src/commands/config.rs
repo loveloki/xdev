@@ -144,7 +144,7 @@ fn get_config_path() -> Result<PathBuf> {
     let config_dir = dirs::config_dir()
         .ok_or_else(|| anyhow::anyhow!(t!("error.config_dir_not_found").to_string()))?;
 
-    Ok(config_dir.join("xdev").join("config"))
+    Ok(config_dir.join("xdev").join("config.toml"))
 }
 
 pub fn show() -> Result<()> {

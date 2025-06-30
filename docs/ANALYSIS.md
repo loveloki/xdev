@@ -45,7 +45,7 @@
 `config` 命令功能完善，是项目的核心。
 
 - **数据结构**: `Config` 结构体 (`draft_path`, `lang`) 使用 `serde` 进行序列化。
-- **存储位置**: 遵循 XDG 规范，使用 `dirs::config_dir()` 将配置文件存储在标准位置（如 `~/.config/xdev/config`），非常规范。
+- **存储位置**: 遵循 XDG 规范，使用 `dirs::config_dir()` 将配置文件存储在标准位置 `~/.config/xdev/config.toml`）。
 - **加载与保存**: `Config::load()` 负责加载、创建默认配置和应用语言设置；`Config::save()` 负责将配置持久化。
 - **交互模式**:
     - **非交互**: `xdev config set <field> <value>`，用于脚本自动化。
