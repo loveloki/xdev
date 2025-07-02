@@ -1,6 +1,7 @@
 use crate::commands::config::Config;
 use crate::commands::hosts::{core::HostsFileStructure, create_hosts_manager};
 use crate::core::i18n::t;
+use crate::core::table::{add_table_row, create_subscription_table, print_table, set_table_header};
 use anyhow::Result;
 
 /// 处理列表命令
@@ -27,31 +28,35 @@ pub fn handle_list() -> Result<()> {
         }
     };
 
-    // 显示表格头部
-    println!("{}", t!("command.hosts.table.border_top"));
-    println!("{}", t!("command.hosts.table.header"));
-    println!("{}", t!("command.hosts.table.separator"));
+    // 显示表格
+    let mut table = create_subscription_table();
+    set_table_header(
+        &mut table,
+        vec![
+            t!("command.hosts.list.table_header_index").to_string(),
+            t!("command.hosts.list.table_header_url").to_string(),
+            t!("command.hosts.list.table_header_status").to_string(),
+        ],
+    );
 
     // 显示每个订阅
     for (index, url) in subscriptions.iter().enumerate() {
         let status = if hosts_subscriptions.contains(url) {
-            t!("command.hosts.list.status_applied")
+            t!("command.hosts.list.status_applied").to_string()
         } else {
-            t!("command.hosts.list.status_not_synced")
+            t!("command.hosts.list.status_not_synced").to_string()
         };
-
-        // 截取过长的 URL
         let display_url = if url.len() > 50 {
             format!("{}...", &url[..47])
         } else {
             url.clone()
         };
-
-        println!("│ {:3} │ {:<51} │ {:<10} │", index + 1, display_url, status);
+        add_table_row(
+            &mut table,
+            vec![(index + 1).to_string(), display_url, status],
+        );
     }
-
-    println!("{}", t!("command.hosts.table.border_bottom"));
-    println!();
+    print_table(&table);
 
     // 显示统计信息
     let total_count = subscriptions.len();

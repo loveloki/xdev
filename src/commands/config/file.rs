@@ -1,6 +1,7 @@
 use crate::commands::config::model::Config;
 use crate::core::globals::APP_NAME;
 use crate::core::i18n::{get_language_display_name, t};
+use crate::core::table::{add_table_row, create_config_table, print_table, set_table_header};
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -19,28 +20,34 @@ pub fn show() -> Result<()> {
         "{}",
         t!("command.config.show.title", path = config_path.display())
     );
-    println!("┌─────────────────┬─────────────────────────────────┐");
-    println!(
-        "│ {:<15} │ {:<31} │",
-        t!("command.config.show.table_header_setting"),
-        t!("command.config.show.table_header_value")
+
+    let mut table = create_config_table();
+    set_table_header(
+        &mut table,
+        vec![
+            t!("command.config.show.table_header_setting").into_owned(),
+            t!("command.config.show.table_header_value").into_owned(),
+        ],
     );
-    println!("├─────────────────┼─────────────────────────────────┤");
-    println!(
-        "│ {:<15} │ {:<31} │",
-        t!("fields.draft_path"),
-        config.draft_path
+    add_table_row(
+        &mut table,
+        vec![
+            t!("fields.draft_path").into_owned(),
+            config.draft_path.clone(),
+        ],
     );
-    println!(
-        "│ {:<15} │ {:<31} │",
-        t!("fields.lang"),
-        format!(
-            "{} ({})",
-            config.lang,
-            get_language_display_name(&config.lang)
-        )
+    add_table_row(
+        &mut table,
+        vec![
+            t!("fields.lang").into_owned(),
+            format!(
+                "{} ({})",
+                config.lang,
+                get_language_display_name(&config.lang)
+            ),
+        ],
     );
-    println!("└─────────────────┴─────────────────────────────────┘");
+    print_table(&table);
 
     Ok(())
 }

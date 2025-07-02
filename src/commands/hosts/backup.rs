@@ -1,6 +1,7 @@
 use crate::commands::hosts::{create_hosts_manager, helpers::generate_backup_filename};
 use crate::core::i18n::t;
 use crate::core::permission::ensure_sudo_privileges;
+use crate::core::table::{add_table_row, create_backup_table, print_table, set_table_header};
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -215,42 +216,42 @@ fn display_available_backups() -> Result<()> {
     });
 
     let total_backups = backups.len();
-
-    // 显示最近的10个备份（倒序）
     backups.reverse();
     let show_count = std::cmp::min(10, backups.len());
 
+    let mut table = create_backup_table();
+    set_table_header(
+        &mut table,
+        vec![
+            "标记".to_string(),
+            "文件名".to_string(),
+            "时间戳".to_string(),
+            "大小 (字节)".to_string(),
+        ],
+    );
+
     for (i, entry) in backups.iter().enumerate().take(show_count) {
         let file_path = entry.path();
-
         if let Some(file_name) = entry.file_name().to_str() {
-            // 提取时间戳
             let timestamp = file_name
                 .strip_prefix("hosts_backup_")
                 .and_then(|s| s.strip_suffix(".txt"))
                 .and_then(|s| s.parse::<u64>().ok())
                 .unwrap_or(0);
-
-            // 获取文件大小
             let size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
-
-            let marker = if i == 0 { "🔸" } else { "📄" };
-            println!(
-                "   {} {} {}",
-                marker,
-                file_path.display(),
-                t!(
-                    "command.hosts.backup_list.file_info",
-                    timestamp = timestamp,
-                    size = size
-                )
+            let marker = if i == 0 { "🔸最新" } else { "📄" };
+            add_table_row(
+                &mut table,
+                vec![
+                    marker.to_string(),
+                    file_name.to_string(),
+                    timestamp.to_string(),
+                    size.to_string(),
+                ],
             );
-
-            if i == 0 {
-                println!("{}", t!("command.hosts.backup_list.latest_marker"));
-            }
         }
     }
+    print_table(&table);
 
     if show_count < total_backups {
         println!(

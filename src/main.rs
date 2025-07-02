@@ -34,5 +34,6 @@ fn main() -> Result<()> {
         }
     };
 
-    commands::handle_command(&mut app, &matches)
+    commands::handle_command(&mut app, &matches)?;
+    Ok(())
 }
