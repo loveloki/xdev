@@ -85,22 +85,24 @@ pub fn execute() -> Result<()> {
     Ok(())
 }
 
-
-
 fn get_install_dir() -> Result<PathBuf> {
     // 只使用 ~/.local/bin
     let home_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!(t!("error.home_dir_not_found").to_string()))?;
-    
+
     let local_bin = home_dir.join(".local").join("bin");
-    
+
     // 如果目录不存在，尝试创建
     if !local_bin.exists() {
         fs::create_dir_all(&local_bin).with_context(|| {
-            t!("error.create_install_dir_failed", path = local_bin.display()).to_string()
+            t!(
+                "error.create_install_dir_failed",
+                path = local_bin.display()
+            )
+            .to_string()
         })?;
     }
-    
+
     Ok(local_bin)
 }
 

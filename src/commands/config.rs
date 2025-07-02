@@ -143,12 +143,12 @@ impl Config {
         if self.hosts_subscriptions.is_none() {
             self.hosts_subscriptions = Some(Vec::new());
         }
-        
+
         let subscriptions = self.hosts_subscriptions.as_mut().unwrap();
         if subscriptions.contains(&url.to_string()) {
             return Ok(false); // 已存在
         }
-        
+
         subscriptions.push(url.to_string());
         Ok(true) // 添加成功
     }
@@ -164,14 +164,20 @@ impl Config {
     }
 
     pub fn get_hosts_subscriptions(&self) -> Vec<String> {
-        self.hosts_subscriptions.as_ref().unwrap_or(&Vec::new()).clone()
+        self.hosts_subscriptions
+            .as_ref()
+            .unwrap_or(&Vec::new())
+            .clone()
     }
 
     pub fn get_field(&self, field: &str) -> Result<String> {
         match field {
             "draft_path" => Ok(self.draft_path.clone()),
             "lang" => Ok(self.lang.clone()),
-            "hosts_subscriptions" => Ok(format!("{:?}", self.hosts_subscriptions.as_ref().unwrap_or(&Vec::new()))),
+            "hosts_subscriptions" => Ok(format!(
+                "{:?}",
+                self.hosts_subscriptions.as_ref().unwrap_or(&Vec::new())
+            )),
             _ => anyhow::bail!(t!("error.unknown_field", field = field).to_string()),
         }
     }

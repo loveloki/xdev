@@ -19,8 +19,9 @@ fn main() -> Result<()> {
         Ok(matches) => matches,
         Err(err) => {
             // 如果是未知子命令错误，显示帮助信息
-            if err.kind() == clap::error::ErrorKind::UnknownArgument 
-                || err.kind() == clap::error::ErrorKind::InvalidSubcommand {
+            if err.kind() == clap::error::ErrorKind::UnknownArgument
+                || err.kind() == clap::error::ErrorKind::InvalidSubcommand
+            {
                 app.print_help()?;
                 println!();
                 return Ok(());

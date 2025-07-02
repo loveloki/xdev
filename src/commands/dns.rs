@@ -23,16 +23,17 @@ pub fn register_command(app: &mut Command) {
                     .help(t!("help.dns_source").to_string())
                     .value_name("SOURCE")
                     .default_value("github")
-                    .value_parser(["github"])
-            )
+                    .value_parser(["github"]),
+            ),
     );
 }
 
 pub fn execute(matches: &clap::ArgMatches) -> Result<()> {
-    let source = matches.get_one::<String>("source")
+    let source = matches
+        .get_one::<String>("source")
         .map(|s| s.as_str())
         .unwrap_or("github");
-    
+
     match source {
         "github" => update_github_dns(),
         _ => {
@@ -43,36 +44,34 @@ pub fn execute(matches: &clap::ArgMatches) -> Result<()> {
 
 fn update_github_dns() -> Result<()> {
     println!("{}", t!("command.dns.checking_permissions"));
-    
+
     // 检查是否有 sudo 权限
     let sudo_check = process::Command::new("sudo")
         .args(["-n", "true"])
         .output()
         .context(t!("error.sudo_check_failed").to_string())?;
-    
+
     if !sudo_check.status.success() {
         println!("{}", t!("command.dns.sudo_required"));
         println!("{}", t!("command.dns.sudo_instruction"));
     }
-    
+
     println!("{}", t!("command.dns.updating_github_dns"));
-    
+
     // 使用编译时确定的平台特定命令
     let output = process::Command::new("sudo")
         .args(["sh", "-c", DNS_UPDATE_COMMAND])
         .output()
         .context(t!("error.dns_update_failed").to_string())?;
-    
+
     if !output.status.success() {
         let error_msg = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!(
-            t!("error.dns_update_command_failed", error = error_msg).to_string()
-        );
+        anyhow::bail!(t!("error.dns_update_command_failed", error = error_msg).to_string());
     }
-    
+
     println!("{}", t!("command.dns.success"));
     println!("{}", t!("command.dns.hosts_updated"));
-    
+
     // 显示更新的主机条目数量（可选）
     if !output.stdout.is_empty() {
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -80,6 +79,6 @@ fn update_github_dns() -> Result<()> {
             println!("{}", t!("command.dns.update_details"));
         }
     }
-    
+
     Ok(())
-} 
+}

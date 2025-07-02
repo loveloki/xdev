@@ -42,7 +42,7 @@ fn get_install_dir() -> Result<PathBuf> {
     // 只使用 ~/.local/bin
     let home_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!(t!("error.home_dir_not_found").to_string()))?;
-    
+
     let local_bin = home_dir.join(".local").join("bin");
     Ok(local_bin)
-} 
+}

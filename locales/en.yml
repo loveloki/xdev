@@ -159,6 +159,7 @@ command:
       restoring_latest: "🔄 Restoring latest backup..."
       success: "✅ Hosts file restoration completed!"
       check_suggestion: "💡 Suggestion: Use 'xdev hosts list' to check current subscription status"
+      specify_backup: "Please specify the backup file name to restore"
     backup_list:
       title: "📋 Available backup files:"
       empty: "   (no backup files)"
@@ -225,6 +226,12 @@ error:
   hosts_url_not_accessible: "URL not accessible, HTTP status: %{status}"
   hosts_backup_not_found: "No backup files found"
   hosts_backup_file_not_exist: "Backup file does not exist: %{path}"
+  permission_denied: "Permission denied, operation rejected"
+  http_client_failed: "Failed to create HTTP client: %{error}"
+  hosts_url_empty: "URL cannot be empty"
+  hosts_url_missing_domain: "URL is missing domain part"
+  hosts_url_invalid_domain: "URL contains invalid domain"
+  hosts_url_invalid_domain_format: "URL contains invalid domain format: %{domain}"
 
 general:
   app_description: "A development CLI tool"
@@ -238,4 +245,6 @@ fields:
 help:
   config_field: "Configuration field to set"
   config_value: "Value to set"
-  dns_source: "DNS source (currently supported: github)" 
+  dns_source: "DNS source (currently supported: github)"
+  hosts_url: "URL of the hosts list"
+  backup_file: "Backup file path (optional)" 

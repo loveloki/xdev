@@ -159,6 +159,7 @@ command:
       restoring_latest: "🔄 正在恢复最新备份..."
       success: "✅ hosts 文件恢复完成！"
       check_suggestion: "💡 建议: 使用 'xdev hosts list' 检查当前订阅状态"
+      specify_backup: "请指定要恢复的备份文件名"
     backup_list:
       title: "📋 可用的备份文件:"
       empty: "   (无备份文件)"
@@ -225,6 +226,12 @@ error:
   hosts_url_not_accessible: "URL 不可访问，HTTP 状态码: %{status}"
   hosts_backup_not_found: "未找到备份文件"
   hosts_backup_file_not_exist: "备份文件不存在: %{path}"
+  permission_denied: "权限不足，操作被拒绝"
+  http_client_failed: "创建 HTTP 客户端失败: %{error}"
+  hosts_url_empty: "URL 不能为空"
+  hosts_url_missing_domain: "URL 缺少域名部分"
+  hosts_url_invalid_domain: "URL 包含无效的域名"
+  hosts_url_invalid_domain_format: "URL 包含无效的域名格式: %{domain}"
 
 general:
   app_description: "开发 CLI 工具"
@@ -235,6 +242,8 @@ help:
   config_field: "要设置的配置字段"
   config_value: "要设置的值"
   dns_source: "DNS 源 (目前支持: github)"
+  hosts_url: "hosts 列表的 URL"
+  backup_file: "备份文件路径（可选）"
 
 fields:
   draft_path: "草稿路径"

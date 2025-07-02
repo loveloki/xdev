@@ -7,11 +7,11 @@ use std::path::{Path, PathBuf};
 const ZDOCS_PATH: &str = "/tmp/zdocs";
 const REQUIRED_FILES: &[&str] = &[
     "content.json",
-    "meta.json", 
+    "meta.json",
     "numbering.json",
     "relations.json",
     "settings.json",
-    "styles.json"
+    "styles.json",
 ];
 
 pub fn register_command(app: &mut Command) {
@@ -43,7 +43,7 @@ fn find_latest_draft_directory() -> Result<PathBuf> {
 
     // 获取最新的子目录
     let latest_subdir = get_latest_subdirectory(zdocs_path)?;
-    
+
     // 在最新子目录中查找包含所有必需文件的目录
     find_draft_directory(&latest_subdir)
 }
@@ -52,14 +52,14 @@ fn find_latest_draft_directory() -> Result<PathBuf> {
 fn get_latest_subdirectory(dir: &Path) -> Result<PathBuf> {
     let mut latest_dir: Option<PathBuf> = None;
     let mut latest_time: Option<std::time::SystemTime> = None;
-    
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
         if path.is_dir() {
             let metadata = entry.metadata()?;
             let modified_time = metadata.modified()?;
-            
+
             // 如果这是第一个目录，或者比当前记录的最新时间更新
             if latest_time.is_none() || modified_time > latest_time.unwrap() {
                 latest_dir = Some(path);
@@ -67,7 +67,7 @@ fn get_latest_subdirectory(dir: &Path) -> Result<PathBuf> {
             }
         }
     }
-    
+
     match latest_dir {
         Some(dir) => Ok(dir),
         None => anyhow::bail!(t!("error.no_subdirs_found", path = dir.display())),
@@ -84,13 +84,11 @@ fn find_draft_directory(dir: &Path) -> Result<PathBuf> {
             return Ok(path);
         }
     }
-    
+
     anyhow::bail!(t!("error.draft_not_found", path = dir.display()))
 }
 
 /// 检查目录是否包含所有必需的文件
 fn has_all_required_files(dir: &Path) -> bool {
-    REQUIRED_FILES.iter().all(|file| {
-        dir.join(file).exists()
-    })
-} 
+    REQUIRED_FILES.iter().all(|file| dir.join(file).exists())
+}
