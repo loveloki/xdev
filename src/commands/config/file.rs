@@ -1,6 +1,6 @@
 use crate::commands::config::model::Config;
 use crate::core::globals::APP_NAME;
-use crate::core::i18n::{get_language_display_name, t};
+use crate::core::i18n::t;
 use crate::core::table::{add_table_row, create_config_table, print_table, set_table_header};
 use anyhow::Result;
 use std::path::PathBuf;
@@ -32,19 +32,15 @@ pub fn show() -> Result<()> {
     add_table_row(
         &mut table,
         vec![
-            t!("fields.draft_path").into_owned(),
+            "draft_path".to_string(),
             config.draft_path.clone(),
         ],
     );
     add_table_row(
         &mut table,
         vec![
-            t!("fields.lang").into_owned(),
-            format!(
-                "{} ({})",
-                config.lang,
-                get_language_display_name(&config.lang)
-            ),
+            "lang".to_string(),
+            config.lang.clone(),
         ],
     );
     print_table(&table);
