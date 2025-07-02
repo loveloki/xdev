@@ -1,6 +1,5 @@
 use crate::commands::config::Config;
-use crate::commands::hosts::core::HostsFileStructure;
-use crate::core::filesystem::{FileManager, StructuredFileManager};
+use crate::commands::hosts::{core::HostsFileStructure, create_hosts_manager};
 use crate::core::i18n::t;
 use anyhow::Result;
 
@@ -95,13 +94,6 @@ pub fn handle_list() -> Result<()> {
     }
 
     Ok(())
-}
-
-/// 创建 hosts 文件管理器
-fn create_hosts_manager() -> Result<StructuredFileManager> {
-    let file_manager =
-        FileManager::with_typed_backup(std::path::PathBuf::from("/etc/hosts"), "hosts")?;
-    Ok(StructuredFileManager::new(file_manager))
 }
 
 /// 获取所有订阅

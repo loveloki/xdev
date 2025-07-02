@@ -1,3 +1,4 @@
+use crate::core::globals::APP_NAME;
 use crate::core::i18n::t;
 use anyhow::{Context, Result};
 use clap::Command;
@@ -14,7 +15,7 @@ pub fn register_command(app: &mut Command) {
 pub fn execute() -> Result<()> {
     let install_dir = get_install_dir()?;
     let binary_path = get_binary_path()?;
-    let target_path = install_dir.join("xdev");
+    let target_path = install_dir.join(APP_NAME);
 
     println!(
         "{}",

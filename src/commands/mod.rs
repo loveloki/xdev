@@ -5,12 +5,13 @@ pub mod install;
 pub mod uninstall;
 pub mod version;
 
+use crate::core::globals::APP_NAME;
 use crate::core::i18n::t;
 use anyhow::Result;
 use clap::{ArgMatches, Command};
 
 pub fn register_command() -> Command {
-    let mut app = Command::new("xdev")
+    let mut app = Command::new(APP_NAME)
         .version("0.1.0")
         .author("xleine@qq.com")
         .about(t!("general.app_description").to_string())

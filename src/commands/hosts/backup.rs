@@ -1,5 +1,4 @@
-use crate::commands::hosts::helpers::generate_backup_filename;
-use crate::core::filesystem::{FileManager, StructuredFileManager};
+use crate::commands::hosts::{create_hosts_manager, helpers::generate_backup_filename};
 use crate::core::i18n::t;
 use crate::core::permission::ensure_sudo_privileges;
 use anyhow::Result;
@@ -158,19 +157,19 @@ pub fn attempt_hosts_rollback() -> Result<()> {
     });
 
     // 恢复最新备份
-    let latest_backup = hosts_backups.last().unwrap();
-    let backup_filename = latest_backup.file_name().unwrap().to_str().unwrap();
+    let latest_backup = hosts_backups
+        .last()
+        .ok_or_else(|| anyhow::anyhow!("{}", t!("error.no_backups_available")))?;
+    let backup_filename = latest_backup
+        .file_name()
+        .ok_or_else(|| anyhow::anyhow!("{}", t!("error.invalid_backup_filename")))?
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("{}", t!("error.invalid_backup_filename")))?;
     hosts_manager
         .file_manager()
         .restore_from_backup(backup_filename)?;
 
     Ok(())
-}
-
-/// 创建 hosts 文件管理器
-fn create_hosts_manager() -> Result<StructuredFileManager> {
-    let file_manager = FileManager::with_typed_backup(PathBuf::from("/etc/hosts"), "hosts")?;
-    Ok(StructuredFileManager::new(file_manager))
 }
 
 /// 显示可用的备份文件

@@ -6,6 +6,10 @@ use crate::commands::hosts::{
     handle_backup, handle_list, handle_restore, handle_subscribe, handle_unsubscribe, handle_update,
 };
 use crate::core::filesystem::FileStructure;
+use crate::core::globals::{
+    HOSTS_SUBSCRIPTION_END_MARKER, HOSTS_SUBSCRIPTION_MARKER_SUFFIX,
+    HOSTS_SUBSCRIPTION_START_MARKER,
+};
 use crate::core::i18n::t;
 
 /// 注册 hosts 命令及其所有子命令
@@ -59,11 +63,15 @@ pub fn register_command(app: &mut Command) {
 pub fn execute(matches: &ArgMatches) -> Result<()> {
     match matches.subcommand() {
         Some(("subscribe", sub_matches)) => {
-            let url = sub_matches.get_one::<String>("url").unwrap();
+            let url = sub_matches
+                .get_one::<String>("url")
+                .ok_or_else(|| anyhow::anyhow!("{}", t!("error.missing_url")))?;
             handle_subscribe(url)
         }
         Some(("unsubscribe", sub_matches)) => {
-            let url = sub_matches.get_one::<String>("url").unwrap();
+            let url = sub_matches
+                .get_one::<String>("url")
+                .ok_or_else(|| anyhow::anyhow!("{}", t!("error.missing_url")))?;
             handle_unsubscribe(url)
         }
         Some(("list", _)) => handle_list(),
@@ -102,8 +110,8 @@ impl FileStructure for HostsFileStructure {
                 if let Some(block_url) = current_block.take() {
                     structure
                         .subscription_blocks
-                        .insert(block_url, current_block_content.clone());
-                    current_block_content.clear();
+                        .insert(block_url, current_block_content);
+                    current_block_content = Vec::new();
                 }
                 current_block = Some(url);
                 current_block_content.push(line);
@@ -116,8 +124,8 @@ impl FileStructure for HostsFileStructure {
                     current_block_content.push(line);
                     structure
                         .subscription_blocks
-                        .insert(block_url, current_block_content.clone());
-                    current_block_content.clear();
+                        .insert(block_url, current_block_content);
+                    current_block_content = Vec::new();
                 } else {
                     // 没有匹配的开始标记，当作普通内容
                     structure.other_content.push(line);
@@ -144,14 +152,22 @@ impl FileStructure for HostsFileStructure {
     }
 
     fn reconstruct(&self) -> String {
-        let mut content = Vec::new();
+        // 预分配容量以提高性能
+        let estimated_size = self.other_content.len()
+            + self
+                .subscription_blocks
+                .values()
+                .map(|v| v.len())
+                .sum::<usize>()
+            + self.subscription_blocks.len(); // 为分隔符预留空间
+        let mut content = Vec::with_capacity(estimated_size);
 
         // 添加其他内容
         content.extend(self.other_content.iter().cloned());
 
         // 添加所有订阅块
         for block_lines in self.subscription_blocks.values() {
-            if !content.is_empty() && !content.last().unwrap().is_empty() {
+            if !content.is_empty() && content.last().is_some_and(|last| !last.is_empty()) {
                 content.push(String::new()); // 添加空行分隔
             }
             content.extend(block_lines.iter().cloned());
@@ -190,9 +206,11 @@ impl HostsFileStructure {
 
 /// 从开始标记中提取订阅 URL
 fn extract_subscription_url_from_start_marker(line: &str) -> Option<String> {
-    if line.starts_with("# === xdev hosts subscription: ") && line.ends_with(" ===") {
-        let start = "# === xdev hosts subscription: ".len();
-        let end = line.len() - " ===".len();
+    if line.starts_with(HOSTS_SUBSCRIPTION_START_MARKER)
+        && line.ends_with(HOSTS_SUBSCRIPTION_MARKER_SUFFIX)
+    {
+        let start = HOSTS_SUBSCRIPTION_START_MARKER.len();
+        let end = line.len() - HOSTS_SUBSCRIPTION_MARKER_SUFFIX.len();
         Some(line[start..end].to_string())
     } else {
         None
@@ -201,7 +219,8 @@ fn extract_subscription_url_from_start_marker(line: &str) -> Option<String> {
 
 /// 检查是否是订阅结束标记
 fn is_subscription_end_marker(line: &str) -> bool {
-    line.starts_with("# === 结束 xdev hosts subscription: ") && line.ends_with(" ===")
+    line.starts_with(HOSTS_SUBSCRIPTION_END_MARKER)
+        && line.ends_with(HOSTS_SUBSCRIPTION_MARKER_SUFFIX)
 }
 
 /// 创建订阅块内容
@@ -209,13 +228,12 @@ fn create_subscription_block(url: &str, hosts_content: &str) -> String {
     let mut block = Vec::new();
 
     // 开始标记
-    block.push(format!("# === xdev hosts subscription: {url} ==="));
+    block.push(format!(
+        "{HOSTS_SUBSCRIPTION_START_MARKER}{url}{HOSTS_SUBSCRIPTION_MARKER_SUFFIX}"
+    ));
 
     // 使用标准库格式化时间
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let timestamp = crate::commands::hosts::helpers::get_current_timestamp();
     block.push(format!("# 订阅时间: {timestamp} (UTC timestamp)"));
     block.push(String::new());
 
@@ -228,7 +246,9 @@ fn create_subscription_block(url: &str, hosts_content: &str) -> String {
     }
 
     block.push(String::new());
-    block.push(format!("# === 结束 xdev hosts subscription: {url} ==="));
+    block.push(format!(
+        "{HOSTS_SUBSCRIPTION_END_MARKER}{url}{HOSTS_SUBSCRIPTION_MARKER_SUFFIX}"
+    ));
 
     block.join("\n")
 }

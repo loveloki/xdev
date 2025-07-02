@@ -52,7 +52,9 @@ fn get_latest_subdirectory(dir: &Path) -> Result<PathBuf> {
             let modified_time = metadata.modified()?;
 
             // 如果这是第一个目录，或者比当前记录的最新时间更新
-            if latest_time.is_none() || modified_time > latest_time.unwrap() {
+            if latest_time.is_none()
+                || modified_time > latest_time.unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+            {
                 latest_dir = Some(path);
                 latest_time = Some(modified_time);
             }

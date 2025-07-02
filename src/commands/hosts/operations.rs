@@ -1,10 +1,12 @@
 use crate::commands::config::Config;
 use crate::commands::hosts::{
     core::HostsFileStructure,
-    helpers::{display_update_summary, generate_backup_filename, print_content_preview},
+    helpers::{
+        create_hosts_manager, display_update_summary, generate_backup_filename,
+        print_content_preview,
+    },
     validation::validate_hosts_content,
 };
-use crate::core::filesystem::{FileManager, StructuredFileManager};
 use crate::core::http::HttpClient;
 use crate::core::i18n::t;
 use crate::core::permission::ensure_sudo_privileges;
@@ -24,7 +26,8 @@ pub fn handle_subscribe(url: &str) -> Result<()> {
     // 检查是否已经订阅过
     let mut config = Config::load()?;
     let current_subscriptions = config.get_hosts_subscriptions();
-    if current_subscriptions.contains(&url.to_string()) {
+    let url_string = url.to_string();
+    if current_subscriptions.contains(&url_string) {
         println!(
             "{}",
             t!("command.hosts.subscribe.already_exists", url = url)
@@ -41,94 +44,93 @@ pub fn handle_subscribe(url: &str) -> Result<()> {
     // 更新 hosts 文件（会自动备份）
     println!("{}", t!("command.hosts.subscribe.updating_hosts"));
 
-    // 在执行危险操作前先保存当前配置状态
-    let _original_subscriptions = config.get_hosts_subscriptions();
-
-    match add_or_update_subscription(url, &content) {
-        Ok(()) => {
-            // hosts 文件更新成功，继续更新配置
-            println!("{}", t!("command.hosts.subscribe.updating_config"));
-            match config.add_hosts_subscription(url) {
-                Ok(added) => {
-                    match config.save() {
-                        Ok(()) => {
-                            // 配置保存成功，操作完成
-                            if added {
-                                println!("{}", t!("command.hosts.subscribe.success", url = url));
-                            } else {
-                                println!("{}", t!("command.hosts.subscribe.updated", url = url));
-                            }
-
-                            // 显示订阅统计
-                            let subscriptions = config.get_hosts_subscriptions();
-                            println!(
-                                "{}",
-                                t!(
-                                    "command.hosts.subscribe.statistics",
-                                    count = subscriptions.len()
-                                )
-                            );
-                        }
-                        Err(config_err) => {
-                            // 配置保存失败，但 hosts 文件已经更新
-                            println!(
-                                "{}",
-                                t!("command.hosts.config_save_failed", error = config_err)
-                            );
-                            println!("{}", t!("command.hosts.config_sync_warning"));
-
-                            // 尝试从最新备份恢复 hosts 文件
-                            println!("{}", t!("command.hosts.rollback_attempt"));
-                            if let Err(restore_err) =
-                                crate::commands::hosts::backup::attempt_hosts_rollback()
-                            {
-                                println!(
-                                    "{}",
-                                    t!("command.hosts.auto_rollback_failed", error = restore_err)
-                                );
-                                println!("{}", t!("command.hosts.system_inconsistent_check"));
-                            } else {
-                                println!("{}", t!("command.hosts.rollback_success"));
-                            }
-                            return Err(config_err);
-                        }
-                    }
-                }
-                Err(config_err) => {
-                    // 配置更新失败，需要回滚 hosts 文件
-                    println!(
-                        "{}",
-                        t!("command.hosts.config_update_failed", error = config_err)
-                    );
-                    println!("{}", t!("command.hosts.rollback_in_progress"));
-
-                    if let Err(rollback_err) =
-                        crate::commands::hosts::backup::attempt_hosts_rollback()
-                    {
-                        println!(
-                            "{}",
-                            t!("command.hosts.auto_rollback_failed", error = rollback_err)
-                        );
-                        println!("{}", t!("command.hosts.system_inconsistent"));
-                        println!("{}", t!("command.hosts.manual_restore_suggestion"));
-                    } else {
-                        println!("{}", t!("command.hosts.rollback_success_complete"));
-                    }
-                    return Err(config_err);
-                }
-            }
-        }
-        Err(hosts_err) => {
-            // hosts 文件更新失败
-            println!(
-                "{}",
-                t!("command.hosts.hosts_file_update_failed", error = hosts_err)
-            );
-            return Err(hosts_err);
-        }
+    // 尝试更新 hosts 文件
+    if let Err(hosts_err) = add_or_update_subscription(url, &content) {
+        println!(
+            "{}",
+            t!("command.hosts.hosts_file_update_failed", error = hosts_err)
+        );
+        return Err(hosts_err);
     }
 
+    // hosts 文件更新成功，继续更新配置
+    println!("{}", t!("command.hosts.subscribe.updating_config"));
+
+    // 尝试更新配置
+    update_config_and_handle_rollback(&mut config, url)?;
+
+    // 显示订阅统计
+    let subscriptions = config.get_hosts_subscriptions();
+    println!(
+        "{}",
+        t!(
+            "command.hosts.subscribe.statistics",
+            count = subscriptions.len()
+        )
+    );
+
     Ok(())
+}
+
+/// 更新配置并处理可能的回滚
+fn update_config_and_handle_rollback(config: &mut Config, url: &str) -> Result<()> {
+    match config.add_hosts_subscription(url) {
+        Ok(added) => match config.save() {
+            Ok(()) => {
+                if added {
+                    println!("{}", t!("command.hosts.subscribe.success", url = url));
+                } else {
+                    println!("{}", t!("command.hosts.subscribe.updated", url = url));
+                }
+                Ok(())
+            }
+            Err(config_err) => handle_config_save_failure(config_err),
+        },
+        Err(config_err) => handle_config_update_failure(config_err),
+    }
+}
+
+/// 处理配置保存失败的情况
+fn handle_config_save_failure(config_err: anyhow::Error) -> Result<()> {
+    println!(
+        "{}",
+        t!("command.hosts.config_save_failed", error = config_err)
+    );
+    println!("{}", t!("command.hosts.config_sync_warning"));
+
+    // 尝试从最新备份恢复 hosts 文件
+    println!("{}", t!("command.hosts.rollback_attempt"));
+    if let Err(restore_err) = crate::commands::hosts::backup::attempt_hosts_rollback() {
+        println!(
+            "{}",
+            t!("command.hosts.auto_rollback_failed", error = restore_err)
+        );
+        println!("{}", t!("command.hosts.system_inconsistent_check"));
+    } else {
+        println!("{}", t!("command.hosts.rollback_success"));
+    }
+    Err(config_err)
+}
+
+/// 处理配置更新失败的情况
+fn handle_config_update_failure(config_err: anyhow::Error) -> Result<()> {
+    println!(
+        "{}",
+        t!("command.hosts.config_update_failed", error = config_err)
+    );
+    println!("{}", t!("command.hosts.rollback_in_progress"));
+
+    if let Err(rollback_err) = crate::commands::hosts::backup::attempt_hosts_rollback() {
+        println!(
+            "{}",
+            t!("command.hosts.auto_rollback_failed", error = rollback_err)
+        );
+        println!("{}", t!("command.hosts.system_inconsistent"));
+        println!("{}", t!("command.hosts.manual_restore_suggestion"));
+    } else {
+        println!("{}", t!("command.hosts.rollback_success_complete"));
+    }
+    Err(config_err)
 }
 
 /// 处理取消订阅命令
@@ -141,8 +143,9 @@ pub fn handle_unsubscribe(url: &str) -> Result<()> {
     // 检查配置文件中是否存在该订阅
     let mut config = Config::load()?;
     let current_subscriptions = config.get_hosts_subscriptions();
+    let url_string = url.to_string();
 
-    if !current_subscriptions.contains(&url.to_string()) {
+    if !current_subscriptions.contains(&url_string) {
         println!("{}", t!("command.hosts.unsubscribe.not_found", url = url));
         println!("{}", t!("command.hosts.unsubscribe.current_list"));
         if current_subscriptions.is_empty() {
@@ -223,7 +226,7 @@ pub fn handle_update() -> Result<()> {
     println!();
 
     let mut success_count = 0;
-    let mut failed_urls = Vec::new();
+    let mut failed_urls = Vec::with_capacity(subscriptions.len());
 
     // 逐个更新订阅
     for (index, url) in subscriptions.iter().enumerate() {
@@ -293,13 +296,6 @@ fn download_and_validate_hosts(url: &str) -> Result<String> {
     validate_hosts_content(&content)?;
 
     Ok(content)
-}
-
-/// 创建 hosts 文件管理器
-fn create_hosts_manager() -> Result<StructuredFileManager> {
-    let file_manager =
-        FileManager::with_typed_backup(std::path::PathBuf::from("/etc/hosts"), "hosts")?;
-    Ok(StructuredFileManager::new(file_manager))
 }
 
 /// 添加或更新订阅

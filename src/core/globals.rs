@@ -58,6 +58,10 @@ pub const HTTP_TIMEOUT_SECONDS: u64 = 30;
 /// HTTP 用户代理
 pub const HTTP_USER_AGENT: &str = "xdev/1.0";
 
+/// 支持的 URL 协议
+pub const HTTP_PROTOCOL: &str = "http://";
+pub const HTTPS_PROTOCOL: &str = "https://";
+
 // ============================================================================
 // 配置管理
 // ============================================================================
@@ -67,6 +71,18 @@ pub const BACKUP_FILE_PREFIX: &str = "hosts_backup_";
 
 /// 备份文件后缀
 pub const BACKUP_FILE_SUFFIX: &str = ".txt";
+
+// ============================================================================
+// 应用程序配置
+// ============================================================================
+
+/// 应用程序名称
+pub const APP_NAME: &str = "xdev";
+
+/// Hosts 订阅标记
+pub const HOSTS_SUBSCRIPTION_START_MARKER: &str = "# === xdev hosts subscription: ";
+pub const HOSTS_SUBSCRIPTION_END_MARKER: &str = "# === 结束 xdev hosts subscription: ";
+pub const HOSTS_SUBSCRIPTION_MARKER_SUFFIX: &str = " ===";
 
 // ============================================================================
 // 语言显示名称映射

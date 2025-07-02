@@ -3,6 +3,7 @@
 //! 提供通用的 URL、IP 地址和其他数据验证功能，
 //! 可被多个命令模块复用。
 
+use crate::core::globals::{HTTP_PROTOCOL, HTTPS_PROTOCOL};
 use crate::core::i18n::t;
 use anyhow::Result;
 
@@ -17,14 +18,14 @@ pub fn validate_url(url: &str) -> Result<()> {
     let url = url.trim();
 
     // 检查协议
-    if !url.starts_with("http://") && !url.starts_with("https://") {
+    if !url.starts_with(HTTP_PROTOCOL) && !url.starts_with(HTTPS_PROTOCOL) {
         anyhow::bail!("{}", t!("error.hosts_url_invalid_protocol"));
     }
 
     // 提取域名部分进行验证
-    let without_protocol = if let Some(stripped) = url.strip_prefix("https://") {
+    let without_protocol = if let Some(stripped) = url.strip_prefix(HTTPS_PROTOCOL) {
         stripped
-    } else if let Some(stripped) = url.strip_prefix("http://") {
+    } else if let Some(stripped) = url.strip_prefix(HTTP_PROTOCOL) {
         stripped
     } else {
         anyhow::bail!("{}", t!("error.hosts_url_invalid_protocol"));

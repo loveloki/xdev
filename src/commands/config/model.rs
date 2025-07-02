@@ -99,7 +99,10 @@ impl Config {
             self.hosts_subscriptions = Some(Vec::new());
         }
 
-        let subscriptions = self.hosts_subscriptions.as_mut().unwrap();
+        let subscriptions = self
+            .hosts_subscriptions
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("{}", t!("error.config_invalid_state")))?;
         if subscriptions.contains(&url.to_string()) {
             return Ok(false); // 已存在
         }
@@ -122,7 +125,7 @@ impl Config {
         self.hosts_subscriptions
             .as_ref()
             .unwrap_or(&Vec::new())
-            .clone()
+            .to_vec()
     }
 
     pub fn get_field(&self, field: &str) -> Result<String> {

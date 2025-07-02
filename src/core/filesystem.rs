@@ -3,6 +3,7 @@
 //! 提供通用的文件操作、备份管理和原子性写入功能，
 //! 可被多个命令模块复用。
 
+use crate::core::globals::APP_NAME;
 use crate::core::i18n::t;
 use anyhow::Result;
 use std::fs;
@@ -34,7 +35,7 @@ impl FileManager {
         // 创建带有分类的备份目录
         let config_dir = dirs::config_dir()
             .ok_or_else(|| anyhow::anyhow!("{}", t!("error.config_dir_failed", path = "config")))?;
-        let backup_dir = config_dir.join("xdev").join("backups").join(backup_type);
+        let backup_dir = config_dir.join(APP_NAME).join("backups").join(backup_type);
 
         Self::new(file_path, backup_dir)
     }

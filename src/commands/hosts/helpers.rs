@@ -1,16 +1,30 @@
+use crate::core::filesystem::{FileManager, StructuredFileManager};
 use crate::core::globals::{
     BACKUP_FILE_PREFIX, BACKUP_FILE_SUFFIX, MAX_PREVIEW_LINE_LENGTH, MAX_PREVIEW_LINES,
     PREVIEW_LINE_DISPLAY_LENGTH,
 };
 use crate::core::i18n::t;
+use anyhow::Result;
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// 创建 hosts 文件管理器（统一函数）
+pub fn create_hosts_manager() -> Result<StructuredFileManager> {
+    let file_manager = FileManager::with_typed_backup(PathBuf::from("/etc/hosts"), "hosts")?;
+    Ok(StructuredFileManager::new(file_manager))
+}
+
+/// 获取当前时间戳
+pub fn get_current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
 
 /// 生成备份文件名
 pub fn generate_backup_filename() -> String {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let timestamp = get_current_timestamp();
     format!("{BACKUP_FILE_PREFIX}{timestamp}{BACKUP_FILE_SUFFIX}")
 }
 
