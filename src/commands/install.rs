@@ -3,8 +3,7 @@ use anyhow::{Context, Result};
 use clap::Command;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
-use std::process;
+use std::path::{Path, PathBuf};
 
 pub fn register_command(app: &mut Command) {
     *app = app
@@ -13,24 +12,6 @@ pub fn register_command(app: &mut Command) {
 }
 
 pub fn execute() -> Result<()> {
-    println!("{}", t!("command.install.building"));
-
-    // 构建 release 版本
-    let output = process::Command::new("cargo")
-        .args(["build", "--release"])
-        .output()
-        .context(t!("error.cargo_build_failed").to_string())?;
-
-    if !output.status.success() {
-        anyhow::bail!(
-            t!(
-                "error.build_failed",
-                error = String::from_utf8_lossy(&output.stderr)
-            )
-            .to_string()
-        );
-    }
-
     let install_dir = get_install_dir()?;
     let binary_path = get_binary_path()?;
     let target_path = install_dir.join("xdev");
@@ -50,72 +31,59 @@ pub fn execute() -> Result<()> {
         .to_string()
     })?;
 
-    // 设置执行权限 (Unix系统)
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&target_path)?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(&target_path, perms)?;
-    }
-
     println!(
         "{}",
         t!("command.install.success", path = target_path.display())
     );
 
     // 检查是否在 PATH 中
-    if let Ok(path_var) = env::var("PATH") {
-        let path_dirs: Vec<&str> = path_var.split(':').collect();
-        let install_dir_str = install_dir.to_string_lossy();
-
-        if !path_dirs.contains(&install_dir_str.as_ref()) {
-            println!(
-                "{}",
-                t!("command.install.path_warning", path = install_dir.display())
-            );
-            println!("{}", t!("command.install.path_instruction"));
-            println!(
-                "{}",
-                t!("command.install.path_export", path = install_dir.display())
-            );
-        }
-    }
+    check_path_warning(&install_dir);
 
     Ok(())
 }
 
+fn check_path_warning(install_dir: &Path) {
+    let path_var = match env::var("PATH") {
+        Ok(path) => path,
+        Err(_) => return, // 如果无法获取 PATH，静默返回
+    };
+
+    let install_dir_str = install_dir.to_string_lossy();
+    let path_dirs: Vec<&str> = path_var.split(':').collect();
+
+    if !path_dirs.contains(&install_dir_str.as_ref()) {
+        println!(
+            "{}",
+            t!("command.install.path_warning", path = install_dir.display())
+        );
+        println!("{}", t!("command.install.path_instruction"));
+        println!(
+            "{}",
+            t!("command.install.path_export", path = install_dir.display())
+        );
+    }
+}
+
 fn get_install_dir() -> Result<PathBuf> {
-    // 只使用 ~/.local/bin
     let home_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!(t!("error.home_dir_not_found").to_string()))?;
 
     let local_bin = home_dir.join(".local").join("bin");
 
-    // 如果目录不存在，尝试创建
-    if !local_bin.exists() {
-        fs::create_dir_all(&local_bin).with_context(|| {
-            t!(
-                "error.create_install_dir_failed",
-                path = local_bin.display()
-            )
-            .to_string()
-        })?;
-    }
+    // 创建目录（如果不存在）
+    fs::create_dir_all(&local_bin).with_context(|| {
+        t!(
+            "error.create_install_dir_failed",
+            path = local_bin.display()
+        )
+        .to_string()
+    })?;
 
     Ok(local_bin)
 }
 
 fn get_binary_path() -> Result<PathBuf> {
+    // 直接使用当前运行的二进制文件
     let current_exe = env::current_exe().context(t!("error.current_exe_failed").to_string())?;
-
-    // 如果我们在开发环境中，使用 target/release/xdev
-    let current_dir = env::current_dir().context(t!("error.current_dir_failed").to_string())?;
-
-    let release_binary = current_dir.join("target").join("release").join("xdev");
-    if release_binary.exists() {
-        Ok(release_binary)
-    } else {
-        Ok(current_exe)
-    }
+    Ok(current_exe)
 }

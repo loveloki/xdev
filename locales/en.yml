@@ -5,7 +5,6 @@ command:
   
   install:
     description: "Install xdev binary to system"
-    building: "🔨 Building release binary..."
     installing: "📦 Installing xdev to %{path}..."
     success: "✅ Successfully installed xdev to %{path}"
     path_warning: "⚠️  Warning: %{path} is not in your PATH"
@@ -179,8 +178,6 @@ command:
     current_prompt: "%{field} (current: %{current})"
 
 error:
-  cargo_build_failed: "Failed to execute cargo build"
-  build_failed: "Failed to build binary:\n%{error}"
   copy_failed: "Failed to copy binary from %{from} to %{to}"
   remove_failed: "Failed to remove binary from %{path}"
   config_dir_failed: "Failed to create config directory: %{path}"

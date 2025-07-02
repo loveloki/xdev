@@ -5,7 +5,6 @@ command:
   
   install:
     description: "安装 xdev 二进制文件到系统"
-    building: "🔨 正在构建 release 版本..."
     installing: "📦 正在安装 xdev 到 %{path}..."
     success: "✅ 成功安装 xdev 到 %{path}"
     path_warning: "⚠️  警告：%{path} 不在您的 PATH 中"
@@ -211,8 +210,6 @@ help:
   backup_file: "备份文件名"
 
 error:
-  cargo_build_failed: "执行 cargo build 失败"
-  build_failed: "构建二进制文件失败：\n%{error}"
   copy_failed: "复制二进制文件失败，从 %{from} 到 %{to}"
   remove_failed: "移除二进制文件失败，从 %{path}"
   config_dir_failed: "创建配置目录失败：%{path}"
