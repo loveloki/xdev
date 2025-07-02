@@ -84,16 +84,16 @@ pub fn handle_restore(backup_file: Option<&str>) -> Result<()> {
                     "{}",
                     t!("command.hosts.restore.file_size", size = metadata.len())
                 );
-                if let Ok(modified) = metadata.modified() {
-                    if let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH) {
-                        println!(
-                            "{}",
-                            t!(
-                                "command.hosts.restore.backup_time",
-                                timestamp = duration.as_secs()
-                            )
-                        );
-                    }
+                if let Ok(modified) = metadata.modified()
+                    && let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH)
+                {
+                    println!(
+                        "{}",
+                        t!(
+                            "command.hosts.restore.backup_time",
+                            timestamp = duration.as_secs()
+                        )
+                    );
                 }
             }
 

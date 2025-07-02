@@ -12,7 +12,9 @@ fn main() -> Result<()> {
     init_i18n()?;
 
     // 提前加载配置以设置正确的语言
-    let _ = commands::config::Config::load();
+    let config = commands::config::Config::load()?;
+    // 确保语言设置生效
+    crate::core::i18n::set_language(&config.lang)?;
 
     let mut app = commands::register_command();
     let matches = match app.clone().try_get_matches() {

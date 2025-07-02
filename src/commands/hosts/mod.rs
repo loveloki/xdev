@@ -1,15 +1,11 @@
 pub mod backup;
+pub mod core;
 pub mod helpers;
 pub mod list;
-pub mod main;
-pub mod structure;
-pub mod subscribe;
-pub mod unsubscribe;
-pub mod update;
+pub mod operations;
+pub mod validation;
 
 pub use backup::{handle_backup, handle_restore};
+pub use core::{execute, register_command};
 pub use list::handle_list;
-pub use main::{execute, register_command};
-pub use subscribe::handle_subscribe;
-pub use unsubscribe::handle_unsubscribe;
-pub use update::handle_update;
+pub use operations::{handle_subscribe, handle_unsubscribe, handle_update};

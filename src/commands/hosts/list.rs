@@ -1,5 +1,5 @@
 use crate::commands::config::Config;
-use crate::commands::hosts::structure::HostsFileStructure;
+use crate::commands::hosts::core::HostsFileStructure;
 use crate::core::filesystem::{FileManager, StructuredFileManager};
 use crate::core::i18n::t;
 use anyhow::Result;

@@ -2184,6 +2184,7 @@ dependencies = [
  "reqwest",
  "rust-i18n",
  "serde",
+ "thiserror",
  "toml",
 ]
 

@@ -20,6 +20,22 @@ command:
   
   config:
     description: "管理配置"
+    show:
+      description: "显示当前配置"
+      title: "📋 配置 (%{path})"
+      table_header_setting: "设置"
+      table_header_value: "值"
+    set:
+      description: "设置配置值"
+      success: "✅ 设置 %{field} = %{value}"
+      updated: "✅ 已将 %{field} 从 '%{old}' 更新为 '%{new}'"
+      no_changes: "ℹ️  %{field} 没有变更"
+      interactive_title: "🔧 交互式配置设置"
+      interactive_prompt: "选择一个配置项进行修改："
+      show_current: "显示当前配置"
+      exit: "退出"
+      continue_prompt: "继续配置？"
+      completed: "🎉 配置完成！"
 
   draft:
     description: "查找最新的 draft 目录"
@@ -177,6 +193,22 @@ command:
   lang:
     description: "语言设置"
     current_prompt: "%{field} (当前: %{current})"
+
+fields:
+  draft_path: "草稿路径"
+  lang: "语言"
+
+general:
+  app_description: "开发工具集"
+  choose_option: "请选择一个选项"
+  draft_path_description: "设置草稿文件的存储路径"
+  continue_prompt: "是否继续？"
+
+help:
+  config_field: "配置字段名"
+  config_value: "配置值"
+  hosts_url: "hosts 订阅 URL"
+  backup_file: "备份文件名"
 
 error:
   cargo_build_failed: "执行 cargo build 失败"
