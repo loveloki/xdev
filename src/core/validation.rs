@@ -58,48 +58,37 @@ pub fn validate_url(url: &str) -> Result<()> {
 
 /// 简单的域名格式验证（内部使用）
 fn is_valid_domain_simple(domain: &str) -> bool {
-    // 允许 IP 地址
-    if is_valid_ip(domain) {
-        return true;
-    }
-
-    // 域名格式检查
+    // 检查域名长度
     if domain.is_empty() || domain.len() > 253 {
         return false;
     }
 
-    // 检查字符
-    if !domain
+    // 检查是否包含有效字符
+    let valid_chars = domain
         .chars()
-        .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
-    {
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '.');
+
+    if !valid_chars {
         return false;
     }
 
-    // 不能以点开头或结尾
+    // 检查是否以点开始或结束
     if domain.starts_with('.') || domain.ends_with('.') {
         return false;
     }
 
-    // 必须包含至少一个点（除非是localhost等特殊情况）
-    if !domain.contains('.') && domain != "localhost" {
+    // 检查是否包含连续的点
+    if domain.contains("..") {
         return false;
     }
 
+    // 检查每个标签的长度（标签是点之间的部分）
+    let labels: Vec<&str> = domain.split('.').collect();
+    for label in labels {
+        if label.is_empty() || label.len() > 63 {
+            return false;
+        }
+    }
+
     true
-}
-
-/// 验证 IP 地址格式（IPv4 和 IPv6）
-pub fn is_valid_ip(ip: &str) -> bool {
-    // IPv4 简单验证
-    if ip.parse::<std::net::Ipv4Addr>().is_ok() {
-        return true;
-    }
-
-    // IPv6 简单验证
-    if ip.parse::<std::net::Ipv6Addr>().is_ok() {
-        return true;
-    }
-
-    false
 }
