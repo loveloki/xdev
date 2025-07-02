@@ -3,6 +3,7 @@
 //! 提供通用的 HTTP 下载和网络请求功能，
 //! 可被多个命令模块复用。
 
+use crate::core::globals::{HTTP_TIMEOUT_SECONDS, HTTP_USER_AGENT};
 use crate::core::i18n::t;
 use anyhow::Result;
 use reqwest::blocking::Client;
@@ -17,8 +18,8 @@ impl HttpClient {
     /// 创建新的 HTTP 客户端
     pub fn new() -> Result<Self> {
         let client = Client::builder()
-            .timeout(Duration::from_secs(30)) // 30秒超时
-            .user_agent("xdev/1.0")
+            .timeout(Duration::from_secs(HTTP_TIMEOUT_SECONDS)) // 使用全局配置的超时时间
+            .user_agent(HTTP_USER_AGENT)
             .build()
             .map_err(|e| anyhow::anyhow!("{}", t!("error.http_client_failed", error = e)))?;
 
@@ -60,20 +61,10 @@ impl HttpClient {
     }
 
     /// 测试 URL 的可达性
-    pub fn test_url_accessibility(&self, url: &str) -> Result<()> {
-        let response = self
-            .client
-            .head(url) // 使用 HEAD 请求只获取头部信息
-            .send()
-            .map_err(|e| anyhow::anyhow!("{}", t!("error.hosts_connection_failed", error = e)))?;
-
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            anyhow::bail!(
-                "{}",
-                t!("error.hosts_url_not_accessible", status = response.status())
-            )
+    pub fn test_url(&self, url: &str) -> Result<bool> {
+        match self.client.head(url).send() {
+            Ok(response) => Ok(response.status().is_success()),
+            Err(_) => Ok(false),
         }
     }
 }

@@ -1,4 +1,5 @@
 use crate::commands::config::file::get_config_path;
+use crate::core::globals::{DEFAULT_LANGUAGE, ZDOCS_PATH};
 use crate::core::i18n::{set_language, t, validate_language};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -14,8 +15,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            draft_path: "/tmp/zdocs".to_string(),
-            lang: "zh-Hans".to_string(),
+            draft_path: ZDOCS_PATH.to_string(),
+            lang: DEFAULT_LANGUAGE.to_string(),
             hosts_subscriptions: Some(Vec::new()),
         }
     }
@@ -49,7 +50,7 @@ impl Config {
             let _ = set_language(&config.lang);
         } else {
             // 如果配置中的语言无效，重置为默认语言
-            config.lang = "zh-Hans".to_string();
+            config.lang = DEFAULT_LANGUAGE.to_string();
             let _ = set_language(&config.lang);
         }
 

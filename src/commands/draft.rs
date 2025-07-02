@@ -1,18 +1,9 @@
+use crate::core::globals::{REQUIRED_ZDOCS_FILES, ZDOCS_PATH};
 use crate::core::i18n::t;
 use anyhow::Result;
 use clap::Command;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-const ZDOCS_PATH: &str = "/tmp/zdocs";
-const REQUIRED_FILES: &[&str] = &[
-    "content.json",
-    "meta.json",
-    "numbering.json",
-    "relations.json",
-    "settings.json",
-    "styles.json",
-];
 
 pub fn register_command(app: &mut Command) {
     *app = app
@@ -90,5 +81,7 @@ fn find_draft_directory(dir: &Path) -> Result<PathBuf> {
 
 /// 检查目录是否包含所有必需的文件
 fn has_all_required_files(dir: &Path) -> bool {
-    REQUIRED_FILES.iter().all(|file| dir.join(file).exists())
+    REQUIRED_ZDOCS_FILES
+        .iter()
+        .all(|file| dir.join(file).exists())
 }

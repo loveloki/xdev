@@ -1,3 +1,7 @@
+use crate::core::globals::{
+    BACKUP_FILE_PREFIX, BACKUP_FILE_SUFFIX, MAX_PREVIEW_LINE_LENGTH, MAX_PREVIEW_LINES,
+    PREVIEW_LINE_DISPLAY_LENGTH,
+};
 use crate::core::i18n::t;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -7,7 +11,7 @@ pub fn generate_backup_filename() -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    format!("hosts_backup_{timestamp}.txt")
+    format!("{BACKUP_FILE_PREFIX}{timestamp}{BACKUP_FILE_SUFFIX}")
 }
 
 /// 显示下载内容的预览
@@ -18,7 +22,6 @@ pub fn print_content_preview(content: &str) {
     let total_lines = lines.len();
     let mut valid_entries = 0;
     let mut preview_count = 0;
-    const MAX_PREVIEW_LINES: usize = 8;
 
     for line in &lines {
         let line = line.trim();
@@ -30,8 +33,8 @@ pub fn print_content_preview(content: &str) {
 
         if preview_count < MAX_PREVIEW_LINES {
             // 截取过长的行
-            let display_line = if line.len() > 60 {
-                format!("{}...", &line[..57])
+            let display_line = if line.len() > MAX_PREVIEW_LINE_LENGTH {
+                format!("{}...", &line[..PREVIEW_LINE_DISPLAY_LENGTH])
             } else {
                 line.to_string()
             };

@@ -282,7 +282,9 @@ fn download_and_validate_hosts(url: &str) -> Result<String> {
     let http_client = HttpClient::new()?;
 
     // 先测试 URL 可达性
-    http_client.test_url_accessibility(url)?;
+    if !http_client.test_url(url)? {
+        anyhow::bail!(t!("error.hosts_url_not_accessible", url = url));
+    }
 
     // 下载内容
     let content = http_client.download(url)?;
