@@ -348,7 +348,7 @@ if command -v upx &> /dev/null; then
     done
 
     echo "--- 最终二进制文件 ---"
-    ls -l "$DIST_DIR"
+    ls -lh "$DIST_DIR"
 else
     echo ""
     echo "注意: UPX 不可用，跳过二进制文件压缩步骤。"

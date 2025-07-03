@@ -1266,7 +1266,7 @@ show_success_message() {
 
 ```bash
 # 通用安装命令（自动检测平台）
-curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | bash
 ```
 
 ## 🚀 GitHub Actions 集成
@@ -1384,7 +1384,7 @@ brew install upx
 #### 安装 xdev：
 ```bash
 # 通用安装命令（自动检测平台）
-curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | bash
 ```
 
 ### 📖 **文档**
@@ -1414,7 +1414,7 @@ curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.s
 
 ```shellscript
 # 通用安装命令（自动检测平台）
-curl -Lsf https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/loveloki/xdev/main/scripts/install.sh | bash
 ```
 
 ---
@@ -2209,4 +2209,3 @@ brew install upx
    - 对于 macOS 目标：在 macOS 系统上运行构建
    - 使用 --linux-only 或 --macos-only 只构建特定平台
 ```
-
