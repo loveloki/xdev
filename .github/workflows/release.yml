@@ -170,7 +170,21 @@ jobs:
         if [ -f CHANGELOG.md ]; then
           # 提取当前版本的变更内容
           CURRENT_VERSION=${GITHUB_REF#refs/tags/}
-          sed -n "/## $CURRENT_VERSION/,/## /p" CHANGELOG.md | sed '$d' > current_changelog.md
+          # 使用 awk 更精确地提取变更内容
+          awk -v version="$CURRENT_VERSION" '
+            /^## / && $0 ~ version { 
+                in_section = 1
+                print
+                next
+            }
+            /^## / && in_section { 
+                in_section = 0
+                exit
+            }
+            in_section { 
+                print
+            }
+          ' CHANGELOG.md > current_changelog.md
           if [ -s current_changelog.md ]; then
             echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
             cat current_changelog.md >> $GITHUB_OUTPUT
